@@ -46,6 +46,12 @@
                     class="flex items-center px-5 py-3 hover:bg-blue-800 transition">
                     <span class="text-xl mr-3"></span> Enregistrer collecte
                 </a>
+                <!-- ===== NOUVEAU LIEN RÉCOMPENSES ===== -->
+                <a href="{{ route('collecteur.recompenses') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.recompenses') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-gift mr-3"></i> Récompenses
+                </a>
             </nav>
 
             <div class="p-4 border-t border-blue-600">

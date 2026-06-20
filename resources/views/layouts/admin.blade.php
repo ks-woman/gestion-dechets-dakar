@@ -56,6 +56,12 @@
                     class="flex items-center px-5 py-3 text-gray-300 hover:bg-gray-700 transition {{ request()->routeIs('admin.statistiques*') ? 'bg-gray-700 border-l-4 border-emerald-500' : '' }}">
                     <i class="fas fa-chart-line w-5 mr-3"></i> Statistiques
                 </a>
+
+                <a href="{{ route('admin.recompenses.index') }}"
+                    class="flex items-center px-5 py-3 text-gray-300 hover:bg-gray-700 transition
+   {{ request()->routeIs('admin.recompenses*') ? 'bg-gray-700 border-l-4 border-purple-500' : '' }}">
+                    <i class="fas fa-gift w-5 mr-3"></i> Récompenses
+                </a>
             </nav>
 
             <div class="p-4 border-t border-gray-700">

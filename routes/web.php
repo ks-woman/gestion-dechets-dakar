@@ -64,7 +64,7 @@ Route::middleware(['auth', 'menage'])->group(function () {
     Route::get('/kit/demander', [KitController::class, 'showDemanderKit'])->name('kit.demander');
     Route::post('/kit/demander', [KitController::class, 'demanderKit'])->name('kit.demander.post');
 
-    //Mode d'emploi
+    // Mode d'emploi
     Route::get('/mode-emploi', function () {
         return view('menage.mode-emploi');
     })->name('menage.mode-emploi')->middleware('auth');
@@ -79,6 +79,14 @@ Route::middleware(['auth', 'menage'])->group(function () {
     Route::get('/profil', [AuthController::class, 'profile'])->name('profil');
     Route::get('/preferences', [AuthController::class, 'preferences'])->name('menage.preferences');
     Route::put('/preferences', [AuthController::class, 'updatePreferences'])->name('menage.preferences.update');
+
+    // =============================================
+    // ROUTES POUR LES RÉCOMPENSES (Ménage/Entreprise)
+    // =============================================
+    Route::get('/recompenses', [App\Http\Controllers\RecompenseController::class, 'catalogue'])->name('recompenses.catalogue');
+    Route::get('/recompenses/{id}', [App\Http\Controllers\RecompenseController::class, 'show'])->name('recompenses.show');
+    Route::post('/recompenses/{id}/echanger', [App\Http\Controllers\RecompenseController::class, 'echanger'])->name('recompenses.echanger');
+    Route::get('/recompenses/historique', [App\Http\Controllers\RecompenseController::class, 'historique'])->name('recompenses.historique');
 });
 
 // =============================================
@@ -97,13 +105,18 @@ Route::middleware(['auth', 'collecteur'])->prefix('collecteur')->name('collecteu
     })->name('scanner');
     Route::get('/activer-kit/scan/{code}', [CollecteurController::class, 'activerKitParScan'])->name('activer-kit.par-scan');
 
-    // 🆕 NOUVELLE ROUTE : Liste des kits à livrer
+    // Liste des kits à livrer
     Route::get('/kits-a-livrer', [CollecteurController::class, 'kitsALivrer'])->name('kits-a-livrer');
 
     // Routes pour l'enregistrement des collectes
     Route::get('/enregistrer-collecte', [CollecteurController::class, 'enregistrerCollectePage'])->name('enregistrer-collecte');
     Route::get('/collecte/{id}/enregistrer', [CollecteurController::class, 'formEnregistrerCollecte'])->name('collecte.form');
     Route::post('/collecte/enregistrer', [CollecteurController::class, 'enregistrerCollecte'])->name('collecte.enregistrer');
+
+    // =============================================
+    // ROUTES POUR LES RÉCOMPENSES (Collecteur - lecture seule)
+    // =============================================
+    Route::get('/recompenses', [App\Http\Controllers\RecompenseController::class, 'collecteurCatalogue'])->name('recompenses');
 });
 
 // =============================================
@@ -124,6 +137,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/collectes', [AdminController::class, 'collectes'])->name('collectes');
     Route::get('/statistiques', [AdminController::class, 'statistiques'])->name('statistiques');
     Route::get('/kits', [AdminController::class, 'kits'])->name('kits');
+
+    // =============================================
+    // ROUTES POUR LA GESTION DES RÉCOMPENSES (Admin)
+    // =============================================
+    Route::resource('recompenses', App\Http\Controllers\Admin\RecompenseController::class)->except(['show']);
 });
 
 // =============================================

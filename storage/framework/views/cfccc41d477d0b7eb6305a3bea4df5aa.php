@@ -80,11 +80,18 @@
                     <span class="text-xl mr-3"></span> Mon profil
                 </a>
 
-                <!-- ===== NOUVEAU LIEN MODE D'EMPLOI ===== -->
+                <!-- Mode d'emploi -->
                 <a href="<?php echo e(route('menage.mode-emploi')); ?>"
                     class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-800 transition
                     <?php echo e(request()->routeIs('menage.mode-emploi') ? 'bg-emerald-800 border-r-4 border-white' : ''); ?>">
                     <i class="fas fa-book mr-3"></i> Mode d'emploi
+                </a>
+
+                <!-- ===== NOUVEAU LIEN RÉCOMPENSES ===== -->
+                <a href="<?php echo e(route('recompenses.catalogue')); ?>"
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-800 transition
+                    <?php echo e(request()->routeIs('recompenses*') ? 'bg-emerald-800 border-r-4 border-white' : ''); ?>">
+                    <i class="fas fa-gift mr-3"></i> Récompenses
                 </a>
             </nav>
 

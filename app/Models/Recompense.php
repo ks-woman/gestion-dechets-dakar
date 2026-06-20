@@ -27,4 +27,18 @@ class Recompense extends Model
     {
         return $this->quantite_disponible > 0;
     }
+
+    public function estEnStock()
+    {
+        return $this->quantite_disponible > 0;
+    }
+
+    public function scopeDisponibles($query)
+    {
+        return $query->where('quantite_disponible', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('date_expiration')
+                    ->orWhere('date_expiration', '>=', now());
+            });
+    }
 }

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Recompense;
 
 class CollecteurController extends BaseController
 {
@@ -338,5 +339,14 @@ class CollecteurController extends BaseController
             ->get();
 
         return view('collecteur.kits-a-livrer', compact('kits'));
+    }
+
+    public function recompenses()
+    {
+        $recompenses = Recompense::disponibles()
+            ->orderBy('points_requis', 'asc')
+            ->paginate(12);
+
+        return view('collecteur.recompenses', compact('recompenses'));
     }
 }
