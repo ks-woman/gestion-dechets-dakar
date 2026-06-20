@@ -43,11 +43,10 @@ class KitController extends \Illuminate\Routing\Controller
         // Générer l'URL que le collecteur scannera
         $urlScan = route('collecteur.activer-kit.par-scan', ['code' => $codeUnique]);
 
-        // Créer le kit - AJOUTE code_qr ICI
+        // Créer le kit (utiliser le modèle amélioré)
         $kit = KitTri::create([
             'user_id' => $user->id,
-            'code_unique' => $codeUnique,
-            'code_qr' => $codeUnique,  // ← AJOUTE CETTE LIGNE
+            'code_qr' => $codeUnique,          // Champ principal
             'url_qr' => $urlScan,
             'type_kit' => $request->type_kit,
             'date_demande' => now(),
@@ -105,70 +104,76 @@ class KitController extends \Illuminate\Routing\Controller
         return 'data:image/png;base64,' . base64_encode($qrImage);
     }
 
-    // Activer le kit (pour le collecteur)
+    // Activer le kit (pour le collecteur) - utilisation de la méthode du modèle
     public function activerKit(Request $request)
     {
-        $request->validate([
-            'code_kit' => 'required|string'
-        ]);
+        try {
+            // Validation
+            $request->validate([
+                'code_kit' => 'required|string'
+            ]);
 
-        // Chercher le kit par code_unique ou code_qr
-        $kit = KitTri::where('code_unique', $request->code_kit)
-            ->orWhere('code_qr', $request->code_kit)
-            ->first();
+            // Recherche du kit
+            $kit = KitTri::where('code_qr', $request->code_kit)->first();
 
-        if (!$kit) {
-            return redirect()->back()->with('error', '❌ Code de kit invalide.');
-        }
+            if (!$kit) {
+                return response()->json(['error' => 'Kit introuvable.'], 404);
+            }
 
-        // Vérifier si le kit est déjà activé
-        if ($kit->statut === 'actif') {
-            return redirect()->back()->with('error', '⚠️ Ce kit est déjà activé.');
-        }
+            if ($kit->statut === 'actif') {
+                return response()->json(['error' => 'Ce kit est déjà activé.'], 400);
+            }
 
-        // Vérifier si le kit est en attente
-        if ($kit->statut !== 'en_attente') {
-            return redirect()->back()->with('error', '⚠️ Ce kit n\'est pas en attente d\'activation.');
-        }
+            if ($kit->statut !== 'en_attente') {
+                return response()->json(['error' => 'Ce kit n\'est pas en attente d\'activation.'], 400);
+            }
 
-        // Récupérer le client
-        $user = $kit->user;
+            $user = $kit->user;
 
-        // Activer le kit
-        $kit->update([
-            'statut' => 'actif',
-            'date_distribution' => now(),
-            'date_activation' => now()
-        ]);
+            if (!$user) {
+                return response()->json(['error' => 'Aucun ménage associé à ce kit.'], 404);
+            }
 
-        // Mettre à jour le statut du client (15 jours d'essai)
-        if ($user && $user->role === 'menage') {
+            // Activer le kit
+            $kit->statut = 'actif';
+            $kit->date_distribution = now();
+            $kit->date_activation = now();
+            $kit->save();
+
+            // Mettre le ménage en période d'essai
             $user->statut_compte = 'essai_15j';
             $user->date_debut_essai = now();
             $user->date_fin_essai = now()->addDays(15);
             $user->save();
-        }
 
-        // Notifier le client
-        Notification::create([
-            'user_id' => $user->id,
-            'titre' => '✅ Votre kit est activé !',
-            'message' => 'Votre kit de tri a été activé. Profitez de 15 jours d\'essai gratuit.',
-            'type' => 'kit',
-            'est_lu' => false
-        ]);
-
-        // Notifier le collecteur qui a activé
-        if (Auth::check()) {
-            Notification::create([
-                'user_id' => Auth::id(),
-                'titre' => '🔧 Kit activé',
-                'message' => 'Vous avez activé le kit de ' . ($user->prenom ?? 'client') . ' ' . ($user->nom ?? ''),
+            // Notification au ménage
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'titre' => '✅ Votre kit est activé !',
+                'message' => 'Votre kit de tri a été activé. Profitez de 15 jours d\'essai gratuit.',
                 'type' => 'kit',
                 'est_lu' => false
             ]);
-        }
 
-        return redirect()->route('collecteur.dashboard')->with('success', '✅ Kit activé avec succès !');
+            // Notification au collecteur
+            if (Auth::check()) {
+                \App\Models\Notification::create([
+                    'user_id' => Auth::id(),
+                    'titre' => '🔧 Kit activé',
+                    'message' => 'Vous avez activé le kit de ' . ($user->prenom ?? 'client') . ' ' . ($user->nom ?? ''),
+                    'type' => 'kit',
+                    'est_lu' => false
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kit activé avec succès !',
+                'menage' => trim(($user->prenom ?? '') . ' ' . ($user->nom ?? ''))
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur activation kit: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur serveur: ' . $e->getMessage()], 500);
+        }
     }
 }

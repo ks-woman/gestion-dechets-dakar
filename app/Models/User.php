@@ -21,6 +21,9 @@ class User extends Authenticatable
         'email',
         'telephone',
         'adresse',
+        'quartier',
+        'latitude',
+        'longitude',
         'mot_passe',
         'role',
         'statut_compte',
@@ -28,7 +31,10 @@ class User extends Authenticatable
         'date_inscription',
         'date_derniere_connexion',
         'frequence_collecte',
-        'jours_collecte'
+        'jours_collecte',
+        'jour_hebdomadaire',
+        'jour_bihebdomadaire',
+        'semaine_type',
     ];
 
     protected $hidden = [

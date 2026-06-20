@@ -66,7 +66,7 @@
                     <span class="text-xl mr-3"></span> Mes statistiques
                 </a>
 
-                <!-- ===== NOUVEAU LIEN MES PRÉFÉRENCES ===== -->
+                <!-- Mes préférences -->
                 <a href="{{ route('menage.preferences') }}"
                     class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-800 transition
                     {{ request()->routeIs('menage.preferences') ? 'bg-emerald-800 border-r-4 border-white' : '' }}">
@@ -77,6 +77,13 @@
                     class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-800 transition
                     {{ request()->routeIs('profil') ? 'bg-emerald-800 border-r-4 border-white' : '' }}">
                     <span class="text-xl mr-3"></span> Mon profil
+                </a>
+
+                <!-- ===== NOUVEAU LIEN MODE D'EMPLOI ===== -->
+                <a href="{{ route('menage.mode-emploi') }}"
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-800 transition
+                    {{ request()->routeIs('menage.mode-emploi') ? 'bg-emerald-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-book mr-3"></i> Mode d'emploi
                 </a>
             </nav>
 

@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Collecte;
 use App\Models\KitTri;
+use App\Models\Menage;
+use App\Models\Entreprise;
+use App\Models\Collecteur;
+use App\Models\Partenaire;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -32,11 +36,21 @@ class AdminController extends BaseController
         return view('admin.dashboard', compact('stats', 'recentUsers'));
     }
 
-    public function utilisateurs()
+    public function utilisateurs(Request $request)
     {
-        $users = User::with(['menage', 'entreprise', 'collecteur'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = User::with(['menage', 'entreprise', 'collecteur']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('telephone', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return view('admin.utilisateurs', compact('users'));
     }
@@ -55,6 +69,7 @@ class AdminController extends BaseController
 
         return view('admin.kits', compact('kits'));
     }
+
     public function statistiques()
     {
         // Collectes par mois
@@ -89,8 +104,23 @@ class AdminController extends BaseController
         $totalOrganique = Collecte::sum('poids_organique');
         $totalResiduel = Collecte::sum('poids_residuel');
 
+        // Totaux généraux
+        $totalPointsGeneraux = User::sum('score_total');
+        $totalUsers = User::count();
+        $totalCollectes = Collecte::count();
+
+        // Répartition par rôle
+        $totalMenages = User::where('role', 'menage')->count();
+        $totalEntreprises = User::where('role', 'entreprise')->count();
+        $totalCollecteurs = User::where('role', 'collecteur')->count();
+        $totalAdmins = User::where('role', 'admin')->count();
+        $totalPartenaires = User::where('role', 'partenaire')->count();
+
         // Top utilisateurs
-        $topUsers = User::orderBy('score_total', 'desc')->take(5)->get();
+        $topUsers = User::withCount('collectes')
+            ->orderBy('score_total', 'desc')
+            ->take(5)
+            ->get();
 
         return view('admin.statistiques', compact(
             'moisKeys',
@@ -99,6 +129,14 @@ class AdminController extends BaseController
             'totalRecyclable',
             'totalOrganique',
             'totalResiduel',
+            'totalPointsGeneraux',
+            'totalUsers',
+            'totalCollectes',
+            'totalMenages',
+            'totalEntreprises',
+            'totalCollecteurs',
+            'totalAdmins',
+            'totalPartenaires',
             'topUsers'
         ));
     }

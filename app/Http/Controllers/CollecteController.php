@@ -54,7 +54,7 @@ class CollecteController extends BaseController
         // Créer la collecte liée à la demande
         $collecte = Collecte::create([
             'user_id' => $user->id,
-            'date_demande' => $request->date_souhaitee,
+            'date_demande' => now(),
             'date_collecte' => $request->date_souhaitee,
             'adresse' => $request->adresse ?? $user->adresse,
             'instructions' => $request->instructions,
@@ -88,7 +88,7 @@ class CollecteController extends BaseController
         return view('collecte.historique', compact('collectes'));
     }
 
-    // Dashboard ménage
+    // Dashboard ménage (UNE SEULE FOIS)
     public function dashboard()
     {
         $user = Auth::user();
@@ -99,9 +99,17 @@ class CollecteController extends BaseController
 
         $totalCollectes = Collecte::where('user_id', $user->id)->count();
 
-        return view('menage.dashboard', compact('user', 'collectes', 'totalCollectes'));
+        // Prochaine collecte planifiée
+        $prochaineCollecte = Collecte::where('user_id', $user->id)
+            ->where('statut', 'planifiee')
+            ->whereDate('date_collecte', '>=', today())
+            ->orderBy('date_collecte', 'asc')
+            ->first();
+
+        return view('menage.dashboard', compact('user', 'collectes', 'totalCollectes', 'prochaineCollecte'));
     }
 
+    // Statistiques
     public function statistiques()
     {
         $user = Auth::user();

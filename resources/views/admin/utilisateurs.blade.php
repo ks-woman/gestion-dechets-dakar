@@ -19,6 +19,24 @@
             </div>
         </div>
 
+        <!-- Barre de recherche -->
+        <div class="p-4 border-b bg-gray-50">
+            <form method="GET" action="{{ route('admin.utilisateurs') }}" class="flex gap-3">
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Rechercher par nom, email ou téléphone..."
+                    class="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+                @if (request('search'))
+                    <a href="{{ route('admin.utilisateurs') }}"
+                        class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                @endif
+            </form>
+        </div>
+
         <div class="overflow-x-auto p-5">
             <table class="w-full">
                 <thead>
@@ -31,7 +49,7 @@
                         <th class="pb-3">Points</th>
                         <th class="pb-3">Inscription</th>
                         <th class="pb-3">Actions</th>
-                    <tr>
+                        </td>
                 </thead>
                 <tbody>
                     @forelse($users as $user)
@@ -59,11 +77,11 @@
                             </td>
                             <td class="py-3">
                                 @if ($user->statut_compte == 'abonne_actif')
-                                    <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800"> Actif</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">🟢 Actif</span>
                                 @elseif($user->statut_compte == 'essai_15j')
-                                    <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">Essai</span>
+                                    <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">🔵 Essai</span>
                                 @else
-                                    <span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
+                                    <span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">⚪
                                         {{ $user->statut_compte }}</span>
                                 @endif
                             </td>

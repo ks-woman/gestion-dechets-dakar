@@ -64,6 +64,11 @@ Route::middleware(['auth', 'menage'])->group(function () {
     Route::get('/kit/demander', [KitController::class, 'showDemanderKit'])->name('kit.demander');
     Route::post('/kit/demander', [KitController::class, 'demanderKit'])->name('kit.demander.post');
 
+    //Mode d'emploi
+    Route::get('/mode-emploi', function () {
+        return view('menage.mode-emploi');
+    })->name('menage.mode-emploi')->middleware('auth');
+
     // Gestion des collectes
     Route::get('/collecte/demander', [CollecteController::class, 'showDemanderCollecte'])->name('collecte.demander');
     Route::post('/collecte/demander', [CollecteController::class, 'demanderCollecte'])->name('collecte.demander.post');
@@ -84,19 +89,21 @@ Route::middleware(['auth', 'collecteur'])->prefix('collecteur')->name('collecteu
     Route::get('/dashboard', [CollecteurController::class, 'dashboard'])->name('dashboard');
     Route::get('/tournee', [CollecteurController::class, 'tournee'])->name('tournee');
 
-    // Routes pour l'activation du kit
+    // Routes pour la gestion des kits
     Route::get('/activer-kit', [CollecteurController::class, 'activerKitPage'])->name('activer-kit');
     Route::post('/kit/activer', [KitController::class, 'activerKit'])->name('kit.activer');
+    Route::get('/scanner', function () {
+        return view('collecteur.scanner');
+    })->name('scanner');
+    Route::get('/activer-kit/scan/{code}', [CollecteurController::class, 'activerKitParScan'])->name('activer-kit.par-scan');
+
+    // 🆕 NOUVELLE ROUTE : Liste des kits à livrer
+    Route::get('/kits-a-livrer', [CollecteurController::class, 'kitsALivrer'])->name('kits-a-livrer');
 
     // Routes pour l'enregistrement des collectes
     Route::get('/enregistrer-collecte', [CollecteurController::class, 'enregistrerCollectePage'])->name('enregistrer-collecte');
     Route::get('/collecte/{id}/enregistrer', [CollecteurController::class, 'formEnregistrerCollecte'])->name('collecte.form');
     Route::post('/collecte/enregistrer', [CollecteurController::class, 'enregistrerCollecte'])->name('collecte.enregistrer');
-
-    Route::get('/scanner', function () {
-        return view('collecteur.scanner');
-    })->name('scanner');
-    Route::get('/activer-kit/scan/{code}', [CollecteurController::class, 'activerKitParScan'])->name('activer-kit.par-scan');
 });
 
 // =============================================
@@ -125,6 +132,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 Route::middleware(['auth', 'partenaire'])->prefix('partenaire')->name('partenaire.')->group(function () {
 
     Route::get('/dashboard', [PartenaireController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dechets-recus', [PartenaireController::class, 'dechetsDisponibles'])->name('dechets');
-    Route::post('/valider-reception/{id}', [PartenaireController::class, 'validerReception'])->name('valider');
+    Route::get('/dechets', [PartenaireController::class, 'dechetsRecus'])->name('dechets');
+    Route::post('/valider/{id}', [PartenaireController::class, 'validerReception'])->name('valider');
+    Route::get('/statistiques', [PartenaireController::class, 'statistiques'])->name('statistiques');
 });

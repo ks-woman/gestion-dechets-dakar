@@ -84,7 +84,8 @@ class CollecteurController extends BaseController
             return redirect()->back()->with('error', 'Vous devez être en période d\'essai ou abonné actif pour demander une collecte.');
         }
 
-        // ... reste du code
+        // ... reste du code (cette méthode n'est pas terminée dans votre version)
+        return redirect()->back()->with('error', 'Cette fonctionnalité n\'est pas encore implémentée.');
     }
 
     // Afficher la tournée du collecteur
@@ -142,9 +143,11 @@ class CollecteurController extends BaseController
         }
 
         // Calcul des poids et points
-        $poidsRecyclable = $request->plastiques_metaux + $request->papiers_cartons;
-        $poidsOrganique = $request->organiques;
-        $poidsResiduel = $request->autres;
+        $poidsPlastiquesMetaux = $request->plastiques_metaux ?? 0;
+        $poidsPapiersCartons = $request->papiers_cartons ?? 0;
+        $poidsRecyclable = $poidsPlastiquesMetaux + $poidsPapiersCartons;
+        $poidsOrganique = $request->organiques ?? 0;
+        $poidsResiduel = $request->autres ?? 0;
         $points = ($poidsRecyclable * 1) + ($poidsOrganique * 0.5);
 
         // Mettre à jour la collecte existante
@@ -153,26 +156,30 @@ class CollecteurController extends BaseController
             'poids_recyclable' => $poidsRecyclable,
             'poids_organique' => $poidsOrganique,
             'poids_residuel' => $poidsResiduel,
-            'points_obtenus' => (int)$points,
+            'points_obtenus' => (int)round($points),
             'collecteur_id' => $collecteur->id,
+            'details_poids' => json_encode([
+                'plastiques_metaux' => $poidsPlastiquesMetaux,
+                'papiers_cartons' => $poidsPapiersCartons,
+                'organiques' => $poidsOrganique,
+                'autres' => $poidsResiduel
+            ])
         ]);
 
         // Ajouter les points au client
-        $client->ajouterPoints($points);
+        $client->ajouterPoints((int)round($points));
 
         // Notification au client
         Notification::create([
             'user_id' => $client->id,
-            'titre' => ' Collecte effectuée',
-            'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)$points . " points.",
+            'titre' => '✅ Collecte effectuée',
+            'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)round($points) . " points. Poids total : " . ($poidsRecyclable + $poidsOrganique + $poidsResiduel) . " kg.",
             'type' => 'collecte',
             'est_lu' => false
         ]);
 
         return redirect()->route('collecteur.tournee')->with('success', 'Collecte enregistrée avec succès !');
     }
-
-
 
     // Page pour sélectionner le client avant d'enregistrer une collecte
     public function enregistrerCollectePage()
@@ -195,65 +202,141 @@ class CollecteurController extends BaseController
         return view('collecteur.selectionner-collecte', compact('clients'));
     }
 
-    // Page pour activer un kit
+    // Page pour activer un kit (redirige vers le scanner)
     public function activerKitPage()
     {
-        $user = Auth::user();
-        $kit = $user->kitTri;
-
-        return view('collecteur.activer-kit', compact('kit'));
+        return redirect()->route('collecteur.scanner');
     }
 
-    // Activer un kit par scan du QR code
+    // Activer un kit via la route GET (scan direct)
     public function activerKitParScan($code)
     {
-        // Trouver le kit par son code unique
         $kit = KitTri::where('code_unique', $code)->first();
 
         if (!$kit) {
             return redirect()->route('collecteur.dashboard')->with('error', '❌ Code de kit invalide.');
         }
 
-        // Vérifier si le kit est déjà activé
         if ($kit->statut === 'actif') {
             return redirect()->route('collecteur.dashboard')->with('error', '⚠️ Ce kit est déjà activé.');
         }
 
-        // Vérifier si le kit est bien en attente de livraison
-        if ($kit->statut !== 'en_attente_livraison') {
+        if ($kit->statut !== 'en_attente') {
             return redirect()->route('collecteur.dashboard')->with('error', '⚠️ Ce kit n\'est pas en attente de livraison.');
         }
 
-        // Récupérer le client
-        $client = $kit->user;
+        $menage = User::find($kit->user_id);
+
+        if (!$menage) {
+            return redirect()->route('collecteur.dashboard')->with('error', '❌ Aucun ménage associé à ce kit.');
+        }
+
+        // Vérifier si le ménage n'a pas déjà un kit actif
+        if ($menage->kitTri && $menage->kitTri->statut === 'actif') {
+            return redirect()->route('collecteur.dashboard')->with('error', '⚠️ Ce ménage a déjà un kit actif.');
+        }
 
         // Activer le kit
         $kit->update([
             'statut' => 'actif',
-            'collecteur_id' => Auth::id(),
             'date_distribution' => now(),
             'date_activation' => now()
         ]);
 
-        // Mettre à jour le statut du client (15 jours d'essai)
-        $client->statut_compte = 'essai_15j';
-        $client->save();
+        // Mettre le ménage en période d'essai
+        $menage->statut_compte = 'essai_15j';
+        $menage->date_debut_essai = now();
+        $menage->date_fin_essai = now()->addDays(15);
+        $menage->save();
 
-        // Notifier le client que son kit est activé
+        // Notifier le client
         Notification::create([
-            'user_id' => $client->id,
+            'user_id' => $menage->id,
             'titre' => '✅ Votre kit est activé !',
             'message' => 'Votre kit de tri a été activé par le collecteur. Profitez de 15 jours d\'essai gratuit.',
             'type' => 'kit',
             'est_lu' => false
         ]);
 
-        // Rediriger vers une page de confirmation
-        return view('collecteur.activation-succes', compact('kit', 'client'));
+        return view('collecteur.activation-succes', compact('kit', 'menage'));
     }
 
+    // Page du scanner
     public function scannerPage()
     {
         return view('collecteur.scanner');
+    }
+
+    // Activer un kit via AJAX (POST)
+    public function activerKit(Request $request)
+    {
+        $request->validate([
+            'code_kit' => 'required|string'
+        ]);
+
+        $kit = KitTri::where('code_unique', $request->code_kit)->first();
+
+        if (!$kit) {
+            return response()->json(['error' => 'Kit introuvable.'], 404);
+        }
+
+        if ($kit->statut !== 'en_attente') {
+            return response()->json(['error' => 'Ce kit n\'est pas en attente de livraison.'], 400);
+        }
+
+        if (!$kit->user_id) {
+            return response()->json(['error' => 'Ce kit n\'est associé à aucun ménage.'], 400);
+        }
+
+        $menage = User::find($kit->user_id);
+
+        if (!$menage) {
+            return response()->json(['error' => 'Le ménage associé n\'existe pas.'], 404);
+        }
+
+        // Vérifier si le ménage n'a pas déjà un kit actif
+        if ($menage->kitTri && $menage->kitTri->statut === 'actif') {
+            return response()->json(['error' => 'Ce ménage a déjà un kit actif.'], 400);
+        }
+
+        // Activer le kit
+        $kit->statut = 'actif';
+        $kit->date_distribution = now();
+        $kit->date_activation = now();
+        $kit->save();
+
+        // Mettre le ménage en période d'essai
+        $menage->statut_compte = 'essai_15j';
+        $menage->date_debut_essai = now();
+        $menage->date_fin_essai = now()->addDays(15);
+        $menage->save();
+
+        // Notification
+        Notification::create([
+            'user_id' => $menage->id,
+            'titre' => '✅ Votre kit est activé !',
+            'message' => 'Votre kit de tri a été livré et activé. Profitez de 15 jours d\'essai gratuit.',
+            'type' => 'kit',
+            'est_lu' => false
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kit activé avec succès !',
+            'menage' => $menage->prenom . ' ' . $menage->nom
+        ]);
+    }
+
+    public function kitsALivrer()
+    {
+        $kits = KitTri::where('statut', 'en_attente')
+            ->whereHas('user', function ($query) {
+                $query->whereIn('role', ['menage', 'entreprise']);
+            })
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('collecteur.kits-a-livrer', compact('kits'));
     }
 }
