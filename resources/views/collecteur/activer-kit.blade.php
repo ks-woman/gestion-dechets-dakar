@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="bg-white rounded-xl shadow p-6">
-        <h1 class="text-2xl font-bold mb-2">📷 Scanner un kit</h1>
+        <h1 class="text-2xl font-bold mb-2"> Scanner un kit</h1>
         <p class="text-gray-500 text-sm mb-4">Scannez le QR code présent sur le kit pour l'activer</p>
 
         <!-- Zone de scan -->
@@ -45,7 +45,7 @@
             if (scanActif) return;
             scanActif = true;
 
-            console.log('📷 Code scanné:', decodedText);
+            console.log(' Code scanné:', decodedText);
 
             html5QrCode.stop().then(() => {
                 activerKit(decodedText);
@@ -63,7 +63,7 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 document.getElementById('reader').innerHTML = `
                 <div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg text-center">
-                    ⚠️ Votre navigateur ne supporte pas la caméra.<br>
+                     Votre navigateur ne supporte pas la caméra.<br>
                     Utilisez la saisie manuelle ci-dessous.
                 </div>
             `;
@@ -88,12 +88,12 @@
                     onScanSuccess,
                     onScanError
                 ).then(() => {
-                    console.log('📷 Caméra démarrée');
+                    console.log(' Caméra démarrée');
                 }).catch(err => {
                     console.error('Erreur caméra:', err);
                     document.getElementById('reader').innerHTML = `
                     <div class="bg-red-100 text-red-800 p-4 rounded-lg text-center">
-                        ❌ Impossible d'accéder à la caméra.<br>
+                         Impossible d'accéder à la caméra.<br>
                         <span class="text-sm">Vérifiez les permissions ou utilisez la saisie manuelle.</span>
                     </div>
                 `;
@@ -102,7 +102,7 @@
                 console.error('Erreur initialisation:', e);
                 document.getElementById('reader').innerHTML = `
                 <div class="bg-red-100 text-red-800 p-4 rounded-lg text-center">
-                    ❌ Erreur d'initialisation.<br>
+                     Erreur d'initialisation.<br>
                     Utilisez la saisie manuelle ci-dessous.
                 </div>
             `;
@@ -114,7 +114,7 @@
             resultatDiv.classList.remove('hidden');
             resultatDiv.innerHTML = `
             <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg flex items-center gap-2">
-                <span class="animate-spin">⏳</span> Activation en cours...
+                <span class="animate-spin"></span> Activation en cours...
             </div>
         `;
 
@@ -133,7 +133,7 @@
                     if (data.success) {
                         resultatDiv.innerHTML = `
                     <div class="bg-green-100 text-green-700 p-3 rounded-lg flex items-center gap-2">
-                        ✅ ${data.message}
+                         ${data.message}
                         ${data.menage ? `<br><span class="text-sm">👤 ${data.menage}</span>` : ''}
                     </div>
                 `;
@@ -143,7 +143,7 @@
                     } else {
                         resultatDiv.innerHTML = `
                     <div class="bg-red-100 text-red-700 p-3 rounded-lg flex items-center gap-2">
-                        ❌ ${data.error}
+                         ${data.error}
                     </div>
                 `;
                         scanActif = false;
@@ -170,7 +170,7 @@
                     console.error('Erreur:', error);
                     resultatDiv.innerHTML = `
                 <div class="bg-red-100 text-red-700 p-3 rounded-lg flex items-center gap-2">
-                    ❌ Erreur de connexion : ${error.message}
+                     Erreur de connexion : ${error.message}
                 </div>
             `;
                     scanActif = false;
@@ -180,7 +180,7 @@
         function activerKitManuel() {
             let code = document.getElementById('code_manuel').value.trim();
             if (!code) {
-                alert('⚠️ Veuillez saisir un code.');
+                alert(' Veuillez saisir un code.');
                 return;
             }
             activerKit(code);

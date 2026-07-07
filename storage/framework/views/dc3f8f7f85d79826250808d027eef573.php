@@ -39,19 +39,19 @@
 
     <div class="grid md:grid-cols-3 gap-6 mt-16">
         <div class="bg-white p-6 rounded-lg shadow text-center">
-            <div class="text-4xl mb-3">🏠</div>
+            <div class="text-4xl mb-3"></div>
             <h3 class="text-xl font-bold mb-2">Pour les ménages</h3>
             <p class="text-gray-600">Collecte à domicile, tri simplifié, points de fidélité</p>
         </div>
 
         <div class="bg-white p-6 rounded-lg shadow text-center">
-            <div class="text-4xl mb-3">🏢</div>
+            <div class="text-4xl mb-3"></div>
             <h3 class="text-xl font-bold mb-2">Pour les entreprises</h3>
             <p class="text-gray-600">Collecte professionnelle, volumes adaptés</p>
         </div>
 
         <div class="bg-white p-6 rounded-lg shadow text-center">
-            <div class="text-4xl mb-3">♻️</div>
+            <div class="text-4xl mb-3"></div>
             <h3 class="text-xl font-bold mb-2">Économie circulaire</h3>
             <p class="text-gray-600">Valorisation des déchets, récompenses à la clé</p>
         </div>

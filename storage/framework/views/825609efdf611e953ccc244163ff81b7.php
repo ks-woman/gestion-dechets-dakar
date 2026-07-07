@@ -3,10 +3,10 @@
 <?php $__env->startSection('content'); ?>
     <div class="space-y-6">
         <div class="bg-white rounded-xl shadow p-6">
-            <h1 class="text-2xl font-bold text-gray-800">🚛 Ma tournée</h1>
+            <h1 class="text-2xl font-bold text-gray-800"> Ma tournée</h1>
             <p class="text-gray-500 mt-1"><?php echo e(now()->format('l d/m/Y')); ?></p>
             <p class="text-sm text-emerald-600 mt-1">
-                📍 Quartier : <?php echo e(auth()->user()->quartier ?? 'Non défini'); ?>
+                Quartier : <?php echo e(auth()->user()->quartier ?? 'Non défini'); ?>
 
                 <?php if(auth()->user()->quartier): ?>
                     <span class="ml-2 text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
@@ -43,18 +43,27 @@
                                     class="border rounded-lg p-3 flex justify-between items-center hover:bg-gray-50 transition">
                                     <div>
                                         <p class="font-semibold"><?php echo e($client->prenom); ?> <?php echo e($client->nom); ?></p>
-                                        <p class="text-sm text-gray-500">📍 <?php echo e($client->adresse); ?></p>
+                                        <p class="text-sm text-gray-500"> <?php echo e($client->adresse); ?></p>
                                         <p class="text-xs text-gray-400">Quartier: <?php echo e($client->quartier); ?></p>
                                         <?php if($client->latitude && $client->longitude): ?>
-                                            <span class="text-xs text-green-600">📍 Localisé</span>
+                                            <span class="text-xs text-green-600"> Localisé</span>
                                         <?php else: ?>
-                                            <span class="text-xs text-orange-500">⚠️ Coordonnées manquantes</span>
+                                            <span class="text-xs text-orange-500"> Coordonnées manquantes</span>
                                         <?php endif; ?>
                                     </div>
-                                    <a href="<?php echo e(route('collecteur.collecte.form', $client->id)); ?>"
-                                        class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm transition">
-                                        <i class="fas fa-check-circle mr-1"></i> Collecter
-                                    </a>
+                                    <!-- ========================================== -->
+                                    <!--  DEUX BOUTONS : COLLECTER + ANOMALIE   -->
+                                    <!-- ========================================== -->
+                                    <div class="flex gap-2">
+                                        <a href="<?php echo e(route('collecteur.collecte.form', $client->id)); ?>"
+                                            class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm">
+                                            Collecter
+                                        </a>
+                                        <a href="<?php echo e(route('collecteur.anomalie.creer', $client->id)); ?>"
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                            Anomalie
+                                        </a>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -122,13 +131,18 @@
                         marker.bindPopup(`
                             <div style="font-size:14px;">
                                 <strong>${client.prenom} ${client.nom}</strong><br>
-                                📍 ${client.adresse}<br>
-                                📞 ${client.telephone || 'Non renseigné'}<br>
-                                🕒 Collecte prévue : ${heures}
+                                 ${client.adresse}<br>
+                                 ${client.telephone || 'Non renseigné'}<br>
+                                 Collecte prévue : ${heures}
                                 <br><br>
                                 <a href="<?php echo e(route('collecteur.collecte.form', '')); ?>/${client.id}"
                                    style="background:#10b981; color:white; padding:4px 12px; border-radius:4px; text-decoration:none;">
-                                   ✅ Collecter
+                                    Collecter
+                                </a>
+                                <br>
+                                <a href="<?php echo e(route('collecteur.anomalie.creer', '')); ?>/${client.id}"
+                                   style="background:#ef4444; color:white; padding:4px 12px; border-radius:4px; text-decoration:none; margin-top:4px; display:inline-block;">
+                                    Anomalie
                                 </a>
                             </div>
                         `);

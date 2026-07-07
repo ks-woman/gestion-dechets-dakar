@@ -31,26 +31,48 @@
 
             <nav class="flex-1 mt-6">
                 <a href="{{ route('collecteur.dashboard') }}"
-                    class="flex items-center px-5 py-3 hover:bg-blue-800 transition">
-                    <span class="text-xl mr-3"></span> Tableau de bord
-                </a>
-                <a href="{{ route('collecteur.tournee') }}"
-                    class="flex items-center px-5 py-3 hover:bg-blue-800 transition">
-                    <span class="text-xl mr-3"></span> Ma tournée
-                </a>
-                <a href="{{ route('collecteur.activer-kit') }}"
-                    class="flex items-center px-5 py-3 hover:bg-blue-800 transition">
-                    <span class="text-xl mr-3"></span> Activer un kit
-                </a>
-                <a href="{{ route('collecteur.enregistrer-collecte') }}"
-                    class="flex items-center px-5 py-3 hover:bg-blue-800 transition">
-                    <span class="text-xl mr-3"></span> Enregistrer collecte
-                </a>
-                <!-- ===== NOUVEAU LIEN RÉCOMPENSES ===== -->
-                <a href="{{ route('collecteur.recompenses') }}"
                     class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.recompenses') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-gift mr-3"></i> Récompenses
+                    {{ request()->routeIs('collecteur.dashboard') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-tachometer-alt mr-3"></i> Tableau de bord
+                </a>
+
+                <a href="{{ route('collecteur.tournee') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.tournee') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-map-marker-alt mr-3"></i> Ma tournée
+                </a>
+
+                <a href="{{ route('collecteur.activer-kit') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.activer-kit') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-qrcode mr-3"></i> Activer un kit
+                </a>
+
+                <a href="{{ route('collecteur.enregistrer-collecte') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.enregistrer-collecte') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-clipboard-list mr-3"></i> Enregistrer collecte
+                </a>
+
+                <a href="{{ route('collecteur.historique') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.historique') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-history mr-3"></i> Historique
+                </a>
+
+                <a href="{{ route('collecteur.statistiques') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.statistiques') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-chart-bar mr-3"></i> Statistiques
+                </a>
+
+
+
+                <!-- ===== NOUVEAU LIEN MES PRIMES ===== -->
+                <a href="{{ route('collecteur.primes') }}"
+                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
+                    {{ request()->routeIs('collecteur.primes') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
+                    <i class="fas fa-coins mr-3"></i> Mes primes
                 </a>
             </nav>
 
@@ -59,7 +81,7 @@
                     @csrf
                     <button type="submit"
                         class="flex items-center w-full px-3 py-2 text-blue-200 hover:text-white hover:bg-blue-800 rounded-lg transition">
-                        <span class="text-xl mr-3"></span> Déconnexion
+                        <i class="fas fa-sign-out-alt mr-3"></i> Déconnexion
                     </button>
                 </form>
             </div>

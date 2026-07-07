@@ -10,6 +10,9 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Recompense;
+use App\Models\PrimeCollecteur;
+use App\Models\Anomalie;
+
 
 class CollecteurController extends BaseController
 {
@@ -92,11 +95,19 @@ class CollecteurController extends BaseController
     // Afficher la tournée du collecteur
     public function tournee()
     {
-        $collecteur = Auth::user();
+        $collecteur = Auth::user()->collecteur;
+        $zones = $collecteur->zones;
+        $quartiers = [];
 
-        // Récupérer les clients du quartier qui ont une collecte planifiée aujourd'hui
+        foreach ($zones as $zone) {
+            $quartiers = array_merge($quartiers, $zone->quartiers ?? []);
+        }
+        $quartiers = array_unique($quartiers);
+
         $clients = User::whereIn('role', ['menage', 'entreprise'])
-            ->where('quartier', $collecteur->quartier)
+            ->when(!empty($quartiers), function ($query) use ($quartiers) {
+                return $query->whereIn('quartier', $quartiers);
+            })
             ->whereHas('collectes', function ($query) {
                 $query->whereDate('date_collecte', today())
                     ->where('statut', 'planifiee');
@@ -173,7 +184,7 @@ class CollecteurController extends BaseController
         // Notification au client
         Notification::create([
             'user_id' => $client->id,
-            'titre' => '✅ Collecte effectuée',
+            'titre' => ' Collecte effectuée',
             'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)round($points) . " points. Poids total : " . ($poidsRecyclable + $poidsOrganique + $poidsResiduel) . " kg.",
             'type' => 'collecte',
             'est_lu' => false
@@ -253,7 +264,7 @@ class CollecteurController extends BaseController
         // Notifier le client
         Notification::create([
             'user_id' => $menage->id,
-            'titre' => '✅ Votre kit est activé !',
+            'titre' => 'Votre kit est activé !',
             'message' => 'Votre kit de tri a été activé par le collecteur. Profitez de 15 jours d\'essai gratuit.',
             'type' => 'kit',
             'est_lu' => false
@@ -315,7 +326,7 @@ class CollecteurController extends BaseController
         // Notification
         Notification::create([
             'user_id' => $menage->id,
-            'titre' => '✅ Votre kit est activé !',
+            'titre' => ' Votre kit est activé !',
             'message' => 'Votre kit de tri a été livré et activé. Profitez de 15 jours d\'essai gratuit.',
             'type' => 'kit',
             'est_lu' => false
@@ -348,5 +359,144 @@ class CollecteurController extends BaseController
             ->paginate(12);
 
         return view('collecteur.recompenses', compact('recompenses'));
+    }
+
+
+
+    public function primes()
+    {
+        $collecteur = Auth::user()->collecteur;
+
+        $primes = PrimeCollecteur::where('collecteur_id', $collecteur->id)
+            ->orderBy('annee', 'desc')
+            ->orderBy('mois', 'desc')
+            ->paginate(12);
+
+        $totalPrimes = PrimeCollecteur::where('collecteur_id', $collecteur->id)
+            ->where('statut', 'valide')
+            ->sum('montant_total');
+
+        return view('collecteur.primes', compact('primes', 'totalPrimes'));
+    }
+    public function historique(Request $request)
+    {
+        $collecteur = Auth::user()->collecteur;
+
+        $query = Collecte::where('collecteur_id', $collecteur->id)->with('user');
+
+        // Filtres
+        if ($request->filled('date_debut')) {
+            $query->whereDate('date_collecte', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('date_collecte', '<=', $request->date_fin);
+        }
+        if ($request->filled('client')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('nom', 'like', '%' . $request->client . '%')
+                    ->orWhere('prenom', 'like', '%' . $request->client . '%');
+            });
+        }
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        $collectes = $query->orderBy('date_collecte', 'desc')->paginate(15);
+
+        $stats = [
+            'total' => Collecte::where('collecteur_id', $collecteur->id)->count(),
+            'total_poids' => Collecte::where('collecteur_id', $collecteur->id)->sum('poids_recyclable') +
+                Collecte::where('collecteur_id', $collecteur->id)->sum('poids_organique') +
+                Collecte::where('collecteur_id', $collecteur->id)->sum('poids_residuel'),
+            'total_points' => Collecte::where('collecteur_id', $collecteur->id)->sum('points_obtenus'),
+        ];
+
+        return view('collecteur.historique', compact('collectes', 'stats'));
+    }
+
+    public function statistiques()
+    {
+        $collecteur = Auth::user()->collecteur;
+        $collecteurId = $collecteur->id;
+
+        $totalCollectes = Collecte::where('collecteur_id', $collecteurId)->count();
+
+        $totalPoids = Collecte::where('collecteur_id', $collecteurId)
+            ->selectRaw('SUM(poids_recyclable) as recyclable,
+                     SUM(poids_organique) as organique,
+                     SUM(poids_residuel) as residuel,
+                     SUM(poids_recyclable + poids_organique + poids_residuel) as total')
+            ->first();
+
+        $collectesParMois = Collecte::where('collecteur_id', $collecteurId)
+            ->selectRaw('MONTH(date_collecte) as mois, COUNT(*) as total')
+            ->whereYear('date_collecte', now()->year)
+            ->groupBy('mois')
+            ->pluck('total', 'mois')
+            ->toArray();
+
+        $totalPoints = Collecte::where('collecteur_id', $collecteurId)->sum('points_obtenus');
+
+        $topClients = Collecte::where('collecteur_id', $collecteurId)
+            ->with('user')
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')
+            ->orderBy('total', 'desc')
+            ->limit(5)
+            ->get();
+
+        $dernieresCollectes = Collecte::where('collecteur_id', $collecteurId)
+            ->with('user')
+            ->orderBy('date_collecte', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('collecteur.statistiques', compact(
+            'totalCollectes',
+            'totalPoids',
+            'collectesParMois',
+            'totalPoints',
+            'topClients',
+            'dernieresCollectes'
+        ));
+    }
+
+    public function creerAnomalie($id)
+    {
+        $client = User::findOrFail($id);
+        return view('collecteur.anomalie-creer', compact('client'));
+    }
+
+    public function storeAnomalie(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'type_anomalie' => 'required|string|in:acces_impossible,absence_tri,dechet_dangereux,client_absent,autre',
+            'description' => 'required|string|max:500',
+            'photo' => 'nullable|image|max:2048'
+        ]);
+
+        // Gérer la photo
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('anomalies', 'public');
+        }
+
+        // Créer l'anomalie (table à créer)
+        $anomalie = Anomalie::create([
+            'collecteur_id' => Auth::user()->collecteur->id,
+            'user_id' => $request->user_id,
+            'type' => $request->type_anomalie,
+            'description' => $request->description,
+            'photo' => $photoPath,
+            'statut' => 'en_attente',
+            'date_signalement' => now(),
+        ]);
+
+        // Notifier l'admin (vous pouvez aussi créer une notification)
+        // ...
+
+        return redirect()->route('collecteur.tournee')
+            ->with('success', 'Anomalie signalée avec succès !');
     }
 }

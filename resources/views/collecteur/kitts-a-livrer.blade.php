@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="bg-white rounded-xl shadow p-6">
-        <h1 class="text-2xl font-bold mb-4">📦 Kits à livrer</h1>
+        <h1 class="text-2xl font-bold mb-4"> Kits à livrer</h1>
         <p class="text-gray-500 mb-6">Scannez le QR code affiché ou cliquez sur "Activer" pour simuler.</p>
 
         @if ($kits->count() > 0)
@@ -20,11 +20,11 @@
                         <div class="flex gap-2 mt-2">
                             <a href="{{ route('collecteur.activer-kit.par-scan', $kit->code_qr) }}"
                                 class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm transition">
-                                ✅ Activer (simulation)
+                                Activer (simulation)
                             </a>
                             <button onclick="copierCode('{{ $kit->code_qr }}')"
                                 class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm transition">
-                                📋 Copier code
+                                Copier code
                             </button>
                         </div>
                     </div>

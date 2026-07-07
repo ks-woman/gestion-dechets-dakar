@@ -5,7 +5,7 @@
 @section('content')
     <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex items-center gap-3 mb-6">
-            <div class="text-3xl">📋</div>
+            <div class="text-3xl"></div>
             <h1 class="text-2xl font-bold text-gray-800">Historique des collectes</h1>
         </div>
 
@@ -46,12 +46,12 @@
                                 </td>
                                 <td class="py-3">
                                     @if ($collecte->statut == 'planifiee')
-                                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">⏳ Planifiée</span>
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"> Planifiée</span>
                                     @elseif($collecte->statut == 'realisee')
-                                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">✅
+                                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
                                             Réalisée</span>
                                     @elseif($collecte->statut == 'en_cours')
-                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">🔄 En
+                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm"> En
                                             cours</span>
                                     @else
                                         <span
@@ -69,7 +69,7 @@
             </div>
         @else
             <div class="text-center py-12 text-gray-500">
-                <div class="text-5xl mb-3">📭</div>
+                <div class="text-5xl mb-3"></div>
                 <p>Aucune collecte pour le moment</p>
                 <a href="{{ route('collecte.demander') }}"
                     class="text-emerald-600 hover:text-emerald-700 mt-3 inline-block font-medium">

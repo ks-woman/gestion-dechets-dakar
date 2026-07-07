@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'partenaire' => \App\Http\Middleware\PartenaireMiddleware::class,
         ]);
     })
+
+    ->withSchedule(function ($schedule) {
+        $schedule->command('collecteur:calculer-primes')->monthlyOn(1, '00:00');
+    })
+
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

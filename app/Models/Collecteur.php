@@ -27,4 +27,22 @@ class Collecteur extends Model
     {
         return $this->hasMany(Collecte::class);
     }
+
+    public function primes()
+    {
+        return $this->hasMany(PrimeCollecteur::class);
+    }
+
+    // Ajoutez cette méthode dans la classe Collecteur
+
+    public function zones()
+    {
+        return $this->belongsToMany(ZoneCollecte::class, 'collecteur_zone', 'collecteur_id',  'zone_id');
+    }
+
+    // Récupérer la première zone (pour simplification)
+    public function getZoneAttribute()
+    {
+        return $this->zones()->first();
+    }
 }

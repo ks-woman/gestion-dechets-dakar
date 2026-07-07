@@ -11,7 +11,7 @@
                     <h1 class="text-2xl font-bold">Bonjour {{ auth()->user()->prenom }} !</h1>
                     <p class="text-blue-100 mt-1">Tableau de bord collecteur</p>
                 </div>
-                <div class="text-5xl">🛵</div>
+                <div class="text-5xl"></div>
             </div>
         </div>
 

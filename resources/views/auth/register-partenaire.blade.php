@@ -123,7 +123,7 @@
 
             fetch(
                     `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(quartier)}, Dakar, Sénégal&format=json&limit=1`
-                    )
+                )
                 .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {

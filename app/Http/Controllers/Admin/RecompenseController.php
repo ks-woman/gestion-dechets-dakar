@@ -17,6 +17,7 @@ class RecompenseController extends Controller
     public function index()
     {
         $recompenses = Recompense::orderBy('points_requis', 'asc')->paginate(15);
+
         return view('admin.recompenses.index', compact('recompenses'));
     }
 
@@ -46,6 +47,7 @@ class RecompenseController extends Controller
     public function edit($id)
     {
         $recompense = Recompense::findOrFail($id);
+
         return view('admin.recompenses.edit', compact('recompense'));
     }
 

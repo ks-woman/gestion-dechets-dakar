@@ -4,14 +4,14 @@
 
 @section('content')
     <div class="bg-white rounded-xl shadow p-6">
-        <h1 class="text-2xl font-bold mb-2">📷 Scanner un kit</h1>
+        <h1 class="text-2xl font-bold mb-2"> Scanner un kit</h1>
         <p class="text-gray-500 text-sm mb-4">Scannez le QR code présent sur le kit pour l'activer</p>
 
         <!-- Zone de scan -->
         <div id="reader"
             style="width: 100%; max-width: 500px; margin: 0 auto; min-height: 250px; background: #f3f4f6; border-radius: 12px; padding: 8px;">
             <div id="camera-status" class="text-center p-4 text-gray-500">
-                <div class="text-4xl mb-2">📷</div>
+                <div class="text-4xl mb-2"></div>
                 <p>Chargement de la caméra...</p>
                 <p class="text-xs text-gray-400">Si la caméra ne fonctionne pas, utilisez les boutons de test ci-dessous.</p>
             </div>
@@ -21,10 +21,10 @@
         <div id="resultat" class="mt-4 hidden"></div>
 
         <!-- ============================================= -->
-        <!-- 🔥 SECTION TEST : Activer sans caméra          -->
+        <!--  SECTION TEST : Activer sans caméra          -->
         <!-- ============================================= -->
         <div class="mt-6 pt-4 border-t border-gray-200">
-            <p class="text-gray-500 text-sm text-center font-semibold">🧪 Mode test (sans caméra)</p>
+            <p class="text-gray-500 text-sm text-center font-semibold"> Mode test (sans caméra)</p>
 
             <div class="flex flex-wrap gap-2 justify-center mt-2">
                 @php
@@ -76,10 +76,10 @@
         // ==== GESTION DE LA CAMÉRA ====
         function demarrerCamera() {
             const statusDiv = document.getElementById('camera-status');
-            statusDiv.innerHTML = '<p class="text-blue-500">⏳ Tentative de démarrage...</p>';
+            statusDiv.innerHTML = '<p class="text-blue-500"> Tentative de démarrage...</p>';
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                statusDiv.innerHTML = '<p class="text-red-500">❌ Votre navigateur ne supporte pas la caméra.</p>';
+                statusDiv.innerHTML = '<p class="text-red-500">Votre navigateur ne supporte pas la caméra.</p>';
                 return;
             }
 
@@ -99,13 +99,13 @@
                     else if (err.name === 'NotFoundError') msg = 'Aucune caméra trouvée.';
                     else if (err.name === 'NotReadableError') msg = 'La caméra est utilisée par une autre application.';
                     statusDiv.innerHTML =
-                        `<p class="text-red-500">❌ ${msg}</p><p class="text-sm text-gray-500">Utilisez les boutons de test ou la saisie manuelle.</p>`;
+                        `<p class="text-red-500"> ${msg}</p><p class="text-sm text-gray-500">Utilisez les boutons de test ou la saisie manuelle.</p>`;
                 });
         }
 
         function lancerScanner() {
             const statusDiv = document.getElementById('camera-status');
-            statusDiv.innerHTML = '<p class="text-green-500">✅ Caméra prête, scan en cours...</p>';
+            statusDiv.innerHTML = '<p class="text-green-500"> Caméra prête, scan en cours...</p>';
 
             try {
                 html5QrCode = new Html5Qrcode("reader");
@@ -126,7 +126,7 @@
                 );
             } catch (e) {
                 console.error('Erreur scanner:', e);
-                statusDiv.innerHTML = '<p class="text-red-500">❌ Erreur d\'initialisation du scanner.</p>';
+                statusDiv.innerHTML = '<p class="text-red-500"> Erreur d\'initialisation du scanner.</p>';
             }
         }
 
@@ -142,7 +142,7 @@
         function activerKit(code) {
             const resultat = document.getElementById('resultat');
             resultat.classList.remove('hidden');
-            resultat.innerHTML = '<div class="bg-yellow-100 text-yellow-700 p-3 rounded">⏳ Activation...</div>';
+            resultat.innerHTML = '<div class="bg-yellow-100 text-yellow-700 p-3 rounded"> Activation...</div>';
 
             fetch('{{ route('collecteur.kit.activer') }}', {
                     method: 'POST',
@@ -158,16 +158,16 @@
                 .then(data => {
                     if (data.success) {
                         resultat.innerHTML =
-                            `<div class="bg-green-100 text-green-700 p-3 rounded">✅ ${data.message}</div>`;
+                            `<div class="bg-green-100 text-green-700 p-3 rounded"> ${data.message}</div>`;
                         setTimeout(() => window.location.href = '{{ route('collecteur.dashboard') }}', 2000);
                     } else {
-                        resultat.innerHTML = `<div class="bg-red-100 text-red-700 p-3 rounded">❌ ${data.error}</div>`;
+                        resultat.innerHTML = `<div class="bg-red-100 text-red-700 p-3 rounded"> ${data.error}</div>`;
                         scanActif = false;
                     }
                 })
                 .catch(err => {
                     resultat.innerHTML =
-                        `<div class="bg-red-100 text-red-700 p-3 rounded">❌ Erreur: ${err.message}</div>`;
+                        `<div class="bg-red-100 text-red-700 p-3 rounded"> Erreur: ${err.message}</div>`;
                     scanActif = false;
                 });
         }
