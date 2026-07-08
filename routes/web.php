@@ -100,11 +100,12 @@ Route::middleware(['auth', 'collecteur'])->prefix('collecteur')->name('collecteu
 });
 
 // =============================================
-// ROUTES ADMIN
+// ROUTES POUR ADMINISTRATEURS
 // =============================================
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
+    // Gestion des utilisateurs (CRUD)
     Route::get('/utilisateurs', [AdminController::class, 'utilisateurs'])->name('utilisateurs');
     Route::get('/utilisateurs/create', [AdminController::class, 'createUtilisateur'])->name('utilisateurs.create');
     Route::post('/utilisateurs', [AdminController::class, 'storeUtilisateur'])->name('utilisateurs.store');
@@ -112,18 +113,39 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/utilisateurs/{id}', [AdminController::class, 'updateUtilisateur'])->name('utilisateurs.update');
     Route::delete('/utilisateurs/{id}', [AdminController::class, 'destroyUtilisateur'])->name('utilisateurs.destroy');
 
+    // Autres pages admin
     Route::get('/collectes', [AdminController::class, 'collectes'])->name('collectes');
     Route::get('/statistiques', [AdminController::class, 'statistiques'])->name('statistiques');
     Route::get('/kits', [AdminController::class, 'kits'])->name('kits');
 
+    // Zones de collecte
     Route::resource('zones', App\Http\Controllers\Admin\ZoneCollecteController::class);
+
+    // Récompenses
     Route::resource('recompenses', App\Http\Controllers\Admin\RecompenseController::class)->except(['show']);
 
+    // Réclamations
     Route::get('/reclamations', [App\Http\Controllers\Admin\ReclamationController::class, 'index'])->name('reclamations.index');
     Route::get('/reclamations/{id}', [App\Http\Controllers\Admin\ReclamationController::class, 'show'])->name('reclamations.show');
     Route::put('/reclamations/{id}', [App\Http\Controllers\Admin\ReclamationController::class, 'update'])->name('reclamations.update');
-});
 
+    // Gestion des catégories de déchets
+    Route::resource('categories', App\Http\Controllers\Admin\CategorieDechetController::class)->except(['show']);
+
+    // =============================================
+    //  GESTION DES STOCKS DE DÉCHETS
+    // =============================================
+    Route::get('/stocks', [App\Http\Controllers\Admin\StockDechetController::class, 'index'])->name('stocks.index');
+    Route::get('/stocks/{id}/edit', [App\Http\Controllers\Admin\StockDechetController::class, 'edit'])->name('stocks.edit');
+    Route::put('/stocks/{id}', [App\Http\Controllers\Admin\StockDechetController::class, 'update'])->name('stocks.update');
+
+    // =============================================
+    //  GESTION DES COMMANDES
+    // =============================================
+    Route::get('/commandes', [App\Http\Controllers\Admin\CommandeController::class, 'index'])->name('commandes.index');
+    Route::get('/commandes/{id}', [App\Http\Controllers\Admin\CommandeController::class, 'show'])->name('commandes.show');
+    Route::put('/commandes/{id}', [App\Http\Controllers\Admin\CommandeController::class, 'update'])->name('commandes.update');
+});
 // =============================================
 // ROUTES PARTENAIRE
 // =============================================

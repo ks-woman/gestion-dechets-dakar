@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use App\Models\StockDechet;
 
 class CollecteController extends BaseController
 {
@@ -152,5 +153,68 @@ class CollecteController extends BaseController
             'collectesParMois',
             'pointsParMois'
         ));
+    }
+
+    public function enregistrerCollecte(Request $request)
+    {
+        $collecteur = Auth::user();
+        $client = User::findOrFail($request->user_id);
+
+        // Vérifier si une collecte a déjà été faite aujourd'hui pour ce client
+        $collecteExistante = Collecte::where('user_id', $client->id)
+            ->whereDate('date_collecte', today())
+            ->where('statut', 'realisee')
+            ->exists();
+
+        if ($collecteExistante) {
+            return redirect()->route('collecteur.tournee')->with('error', 'Ce client a déjà été collecté aujourd\'hui.');
+        }
+
+        // Récupérer la collecte planifiée du jour (si elle existe)
+        $collectePlanifiee = Collecte::where('user_id', $client->id)
+            ->whereDate('date_collecte', today())
+            ->where('statut', 'planifiee')
+            ->first();
+
+        if (!$collectePlanifiee) {
+            return redirect()->route('collecteur.tournee')->with('error', 'Aucune collecte planifiée pour ce client aujourd\'hui.');
+        }
+
+        // Calcul des poids et points
+        $poidsRecyclable = $request->plastiques_metaux + $request->papiers_cartons;
+        $poidsOrganique = $request->organiques;
+        $poidsResiduel = $request->autres;
+        $points = ($poidsRecyclable * 1) + ($poidsOrganique * 0.5);
+
+        // Mettre à jour la collecte existante
+        $collectePlanifiee->update([
+            'statut' => 'realisee',
+            'poids_recyclable' => $poidsRecyclable,
+            'poids_organique' => $poidsOrganique,
+            'poids_residuel' => $poidsResiduel,
+            'points_obtenus' => (int)$points,
+            'collecteur_id' => $collecteur->id,
+        ]);
+
+        // ============================================================
+        // 🆕 AJOUT : Incrémenter les stocks de déchets
+        // ============================================================
+        StockDechet::incrementer('recyclable', $poidsRecyclable);
+        StockDechet::incrementer('organique', $poidsOrganique);
+        StockDechet::incrementer('residuel', $poidsResiduel);
+
+        // Ajouter les points au client
+        $client->ajouterPoints($points);
+
+        // Notification au client
+        Notification::create([
+            'user_id' => $client->id,
+            'titre' => ' Collecte effectuée',
+            'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)$points . " points.",
+            'type' => 'collecte',
+            'est_lu' => false
+        ]);
+
+        return redirect()->route('collecteur.tournee')->with('success', 'Collecte enregistrée avec succès !');
     }
 }

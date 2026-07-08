@@ -5,7 +5,7 @@
 @section('content')
     <div class="bg-white rounded-xl shadow p-6">
         <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">📖 Mode d’emploi du kit de tri</h1>
+            <h1 class="text-2xl font-bold text-gray-800"> Mode d’emploi du kit de tri</h1>
             <p class="text-gray-500 mt-1">Apprenez à utiliser votre kit pour trier efficacement vos déchets.</p>
         </div>
 
@@ -35,7 +35,7 @@
             <!-- Déchets organiques -->
             <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 shadow-sm">
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="text-3xl">🍎</span>
+                    <span class="text-3xl"></span>
                     <h3 class="text-lg font-bold text-green-800">Déchets organiques</h3>
                 </div>
                 <p class="text-gray-700 text-sm">Déposez ici les restes alimentaires : épluchures de fruits et légumes, marc
@@ -50,7 +50,7 @@
             <!-- Papiers & Cartons -->
             <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 shadow-sm">
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="text-3xl">📄</span>
+                    <span class="text-3xl"></span>
                     <h3 class="text-lg font-bold text-yellow-800">Papiers & Cartons</h3>
                 </div>
                 <p class="text-gray-700 text-sm">Déposez ici les journaux, magazines, cahiers, feuilles, cartons, emballages
@@ -65,7 +65,7 @@
             <!-- Autres déchets -->
             <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-500 shadow-sm">
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="text-3xl">🗑️</span>
+                    <span class="text-3xl"></span>
                     <h3 class="text-lg font-bold text-gray-800">Autres déchets</h3>
                 </div>
                 <p class="text-gray-700 text-sm">Déposez ici les déchets non recyclables : couches, cotons-tiges, objets en
@@ -81,7 +81,7 @@
         <!-- Conseils généraux -->
         <div class="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
             <h3 class="font-bold text-emerald-800 flex items-center gap-2">
-                💡 Astuces pour un tri efficace
+                Astuces pour un tri efficace
             </h3>
             <ul class="mt-2 text-sm text-emerald-700 list-disc list-inside space-y-1">
                 <li><strong>Rincez</strong> les emballages pour éviter les mauvaises odeurs.</li>
@@ -96,7 +96,7 @@
         <div class="mt-6 text-center">
             <a href="{{ route('collecte.demander') }}"
                 class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg inline-block transition">
-                📦 Demander une collecte
+                Demander une collecte
             </a>
             <p class="text-xs text-gray-400 mt-2">N’attendez pas que votre kit déborde, demandez une collecte !</p>
         </div>

@@ -12,7 +12,7 @@
             </a>
         </div>
 
-        <h1 class="text-2xl font-bold text-gray-800 mb-6">👤 Mon profil</h1>
+        <h1 class="text-2xl font-bold text-gray-800 mb-6"> Mon profil</h1>
 
         <div class="space-y-4">
             <!-- Informations -->

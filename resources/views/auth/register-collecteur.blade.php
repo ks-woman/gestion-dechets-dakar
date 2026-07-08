@@ -1,148 +1,84 @@
-@extends('layouts.app')
+@extends('layouts.auth')
+
+@section('title', 'Inscription')
 
 @section('content')
-    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
-        <h2 class="text-2xl font-bold mb-6 text-center">Inscription - Collecteur</h2>
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <div class="text-center mb-6">
+            <div class="text-5xl mb-2"></div>
+            <h1 class="text-2xl font-bold text-gray-800">Créer un compte</h1>
+            <p class="text-gray-500 text-sm mt-1">Rejoignez la communauté du recyclage</p>
+        </div>
 
-        <form method="POST" action="{{ route('register.collecteur') }}">
+        @if ($errors->any())
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-lg mb-4 text-sm">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ $errors->first() }}
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('register.menage') }}" class="space-y-4">
             @csrf
-
-            <div class="mb-4">
-                <label class="block mb-2">Nom</label>
-                <input type="text" name="nom" value="{{ old('nom') }}" class="w-full border rounded p-2" required>
-                @error('nom')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">Nom</label>
+                    <input type="text" name="nom" value="{{ old('nom') }}"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">Prénom</label>
+                    <input type="text" name="prenom" value="{{ old('prenom') }}"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500"
+                        required>
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Prénom</label>
-                <input type="text" name="prenom" value="{{ old('prenom') }}" class="w-full border rounded p-2" required>
-                @error('prenom')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Email</label>
+                <input type="email" name="email" value="{{ old('email') }}"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Email</label>
-                <input type="email" name="email" value="{{ old('email') }}" class="w-full border rounded p-2" required>
-                @error('email')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Téléphone</label>
+                <input type="tel" name="telephone" value="{{ old('telephone') }}"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Téléphone</label>
-                <input type="tel" name="telephone" value="{{ old('telephone') }}" class="w-full border rounded p-2"
-                    required>
-                @error('telephone')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Adresse</label>
+                <input type="text" name="adresse" value="{{ old('adresse') }}"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Adresse</label>
-                <textarea name="adresse" class="w-full border rounded p-2" required>{{ old('adresse') }}</textarea>
-                @error('adresse')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Quartier</label>
+                <input type="text" name="quartier" value="{{ old('quartier') }}"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <!-- ===== QUARTIER AVEC GÉOLOCALISATION ===== -->
-            <div class="mb-4">
-                <label class="block mb-2">Quartier</label>
-                <input type="text" name="quartier" id="quartier" class="w-full border rounded p-2" required>
-                <input type="hidden" name="latitude" id="latitude">
-                <input type="hidden" name="longitude" id="longitude">
-                <div id="geo_status" class="text-xs mt-1"></div>
-                <p class="text-xs text-gray-500 mt-1">Ex: Yoff, Pikine, Guediawaye, Parcelles Assainies</p>
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Mot de passe</label>
+                <input type="password" name="mot_passe"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Matricule</label>
-                <input type="text" name="matricule" value="{{ old('matricule') }}" class="w-full border rounded p-2"
-                    required>
-                @error('matricule')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Confirmer le mot de passe</label>
+                <input type="password" name="mot_passe_confirmation"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500" required>
             </div>
 
-            <div class="mb-4">
-                <label class="block mb-2">Type de véhicule</label>
-                <select name="vehicule_type" class="w-full border rounded p-2" required>
-                    <option value="">Sélectionner</option>
-                    <option value="charette">Charrette</option>
-                    <option value="motocycliste">Moto</option>
-                    <option value="camion">Camion</option>
-                </select>
-                @error('vehicule_type')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div class="mb-4">
-                <label class="block mb-2">Zone de couverture</label>
-                <input type="text" name="zone_couverture" value="{{ old('zone_couverture') }}"
-                    class="w-full border rounded p-2" placeholder="Ex: Pikine, Guediawaye">
-                @error('zone_couverture')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div class="mb-4">
-                <label class="block mb-2">Mot de passe</label>
-                <input type="password" name="mot_passe" class="w-full border rounded p-2" required>
-                @error('mot_passe')
-                    <div class="text-red-500 mt-1">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div class="mb-4">
-                <label class="block mb-2">Confirmer le mot de passe</label>
-                <input type="password" name="mot_passe_confirmation" class="w-full border rounded p-2" required>
-            </div>
-
-            <button type="submit" class="w-full bg-green-500 text-white p-2 rounded">S'inscrire</button>
+            <button type="submit" class="btn-primary w-full py-3 rounded-lg text-base font-semibold">
+                <i class="fas fa-user-plus mr-2"></i> S'inscrire
+            </button>
         </form>
 
-        <p class="mt-4 text-center">Déjà inscrit ? <a href="{{ route('login') }}" class="text-blue-500">Se connecter</a>
+        <p class="text-center text-gray-500 text-sm mt-6">
+            Déjà inscrit ?
+            <a href="{{ route('login') }}" class="text-emerald-600 hover:text-emerald-700 font-medium">
+                Se connecter
+            </a>
         </p>
     </div>
-
-    <!-- Script de géolocalisation -->
-    <script>
-        document.getElementById('quartier').addEventListener('blur', function() {
-            let quartier = this.value;
-            let statusDiv = document.getElementById('geo_status');
-
-            if (!quartier) {
-                statusDiv.innerHTML = '';
-                return;
-            }
-
-            statusDiv.innerHTML = ' Recherche du quartier...';
-            statusDiv.style.color = 'blue';
-
-            fetch(
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(quartier)}, Dakar, Sénégal&format=json&limit=1`
-                )
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        document.getElementById('latitude').value = data[0].lat;
-                        document.getElementById('longitude').value = data[0].lon;
-                        statusDiv.innerHTML = ' Quartier localisé avec succès !';
-                        statusDiv.style.color = 'green';
-                    } else {
-                        statusDiv.innerHTML = ' Quartier non trouvé. Vérifiez l\'orthographe.';
-                        statusDiv.style.color = 'red';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    statusDiv.innerHTML = ' Erreur de connexion. Réessayez.';
-                    statusDiv.style.color = 'red';
-                });
-        });
-    </script>
 @endsection

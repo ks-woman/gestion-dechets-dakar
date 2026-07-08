@@ -10,6 +10,7 @@ use App\Models\Partenaire;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use App\Models\StockDechet;
 
 class PartenaireController extends BaseController
 {
@@ -128,20 +129,6 @@ class PartenaireController extends BaseController
     }
 
     // =============================================
-    // OFFRES DE DÉCHETS DISPONIBLES
-    // =============================================
-    public function offres()
-    {
-        $collectes = Collecte::where('statut', 'realisee')
-            ->whereDoesntHave('commande')
-            ->with('user')
-            ->orderBy('date_collecte', 'desc')
-            ->paginate(12);
-
-        return view('partenaire.offres', compact('collectes'));
-    }
-
-    // =============================================
     // FORMULAIRE DE COMMANDE
     // =============================================
     public function showCommandeForm($id)
@@ -158,59 +145,6 @@ class PartenaireController extends BaseController
         }
 
         return view('partenaire.commander', compact('collecte'));
-    }
-
-    // =============================================
-    // ENREGISTRER UNE COMMANDE
-    // =============================================
-    public function storeCommande(Request $request)
-    {
-        $request->validate([
-            'collecte_id' => 'required|exists:collectes,id',
-            'quantite' => 'required|numeric|min:0.1',
-            'prix_unitaire' => 'required|numeric|min:0',
-        ]);
-
-        $collecte = Collecte::find($request->collecte_id);
-        $quantite = $request->quantite;
-        $prixUnitaire = $request->prix_unitaire;
-
-        // Vérifier que la collecte existe et est disponible
-        if ($collecte->statut !== 'realisee') {
-            return back()->with('error', 'Cette collecte n\'est plus disponible.');
-        }
-
-        if ($collecte->commande) {
-            return back()->with('error', 'Cette collecte a déjà été commandée.');
-        }
-
-        // Vérifier la quantité disponible
-        $poidsTotal = $collecte->poids_recyclable + $collecte->poids_organique + $collecte->poids_residuel;
-        if ($quantite > $poidsTotal) {
-            return back()->with('error', 'Quantité demandée supérieure au poids disponible (' . number_format($poidsTotal, 1) . ' kg).');
-        }
-
-        // Créer la commande
-        $commande = Commande::create([
-            'partenaire_id' => Auth::id(),
-            'collecte_id' => $collecte->id,
-            'quantite' => $quantite,
-            'prix_unitaire' => $prixUnitaire,
-            'montant_total' => $quantite * $prixUnitaire,
-            'statut' => 'en_attente',
-        ]);
-
-        // Notifier l'admin
-        Notification::create([
-            'user_id' => 1, // admin
-            'titre' => '📦 Nouvelle commande',
-            'message' => 'Une commande a été passée par ' . Auth::user()->nom . ' pour la collecte #' . $collecte->id,
-            'type' => 'commande',
-            'est_lu' => false,
-        ]);
-
-        return redirect()->route('partenaire.historique')
-            ->with('success', 'Commande passée avec succès. En attente de validation.');
     }
 
     // =============================================
@@ -277,7 +211,7 @@ class PartenaireController extends BaseController
         if ($commande->collecte->collecteur) {
             Notification::create([
                 'user_id' => $commande->collecte->collecteur->user_id,
-                'titre' => '📄 Certificat généré',
+                'titre' => ' Certificat généré',
                 'message' => 'Un certificat de valorisation a été émis pour la collecte #' . $commande->collecte_id,
                 'type' => 'certificat',
                 'est_lu' => false,
@@ -308,7 +242,7 @@ class PartenaireController extends BaseController
     // =============================================
     public function updateProfil(Request $request)
     {
-        $partenaire = Partenaire::where('user_id', Auth::id())->firstOrFail();
+        $partenaire = Auth::user()->partenaire ?? abort(404);
 
         $request->validate([
             'type_partenaire' => 'required|string',
@@ -324,5 +258,40 @@ class PartenaireController extends BaseController
 
         return redirect()->route('partenaire.dashboard')
             ->with('success', 'Profil mis à jour avec succès.');
+    }
+
+    public function offres()
+    {
+        $stocks = StockDechet::all();
+        return view('partenaire.offres', compact('stocks'));
+    }
+    public function storeCommande(Request $request)
+    {
+        $request->validate([
+            'type_dechet' => 'required|in:recyclable,organique,residuel',
+            'quantite' => 'required|numeric|min:0.1',
+            'prix_unitaire' => 'required|numeric|min:0',
+        ]);
+
+        $stock = StockDechet::where('type', $request->type_dechet)->first();
+
+        if (!$stock || $stock->quantite < $request->quantite) {
+            return back()->with('error', 'Stock insuffisant. Disponible : ' . ($stock->quantite ?? 0) . ' kg');
+        }
+
+        // Créer la commande
+        $commande = Commande::create([
+            'partenaire_id' => Auth::id(),
+            'type_dechet' => $request->type_dechet,
+            'quantite' => $request->quantite,
+            'prix_unitaire' => $request->prix_unitaire,
+            'montant_total' => $request->quantite * $request->prix_unitaire,
+            'statut' => 'en_attente',
+        ]);
+
+        // Réserver le stock (le décrémenter immédiatement ou à la validation)
+        StockDechet::decrementer($request->type_dechet, $request->quantite);
+
+        return redirect()->route('partenaire.historique')->with('success', 'Commande passée avec succès.');
     }
 }
