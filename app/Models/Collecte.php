@@ -46,4 +46,9 @@ class Collecte extends Model
 
         $this->user->ajouterPoints($this->points_obtenus);
     }
+
+    public function commande()
+    {
+        return $this->hasOne(Commande::class);
+    }
 }

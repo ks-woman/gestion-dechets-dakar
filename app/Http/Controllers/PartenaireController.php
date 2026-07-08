@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Collecte;
+use App\Models\Commande;
+use App\Models\CertificatValorisation;
+use App\Models\Notification;
+use App\Models\Partenaire;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
@@ -15,10 +19,12 @@ class PartenaireController extends BaseController
         $this->middleware('partenaire');
     }
 
-    // Dashboard partenaire
+    // =============================================
+    // DASHBOARD
+    // =============================================
     public function dashboard()
     {
-        // Statistiques
+        // Statistiques globales
         $totalCollectes = Collecte::where('statut', 'valorisee')->count();
         $totalPoids = Collecte::where('statut', 'valorisee')->sum('poids_recyclable') +
             Collecte::where('statut', 'valorisee')->sum('poids_organique') +
@@ -26,17 +32,31 @@ class PartenaireController extends BaseController
         $totalPoints = Collecte::where('statut', 'valorisee')->sum('points_obtenus');
         $enAttente = Collecte::where('statut', 'realisee')->count();
 
-        // Dernières collectes reçues
-        $dernieresCollectes = Collecte::whereIn('statut', ['realisee', 'valorisee'])
-            ->with('user')
-            ->orderBy('updated_at', 'desc')
+        // Dernières commandes du partenaire
+        $dernieresCommandes = Commande::where('partenaire_id', Auth::id())
+            ->with('collecte.user')
+            ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        return view('partenaire.dashboard', compact('totalCollectes', 'totalPoids', 'totalPoints', 'enAttente', 'dernieresCollectes'));
+        // Nombre d'offres disponibles
+        $offresDisponibles = Collecte::where('statut', 'realisee')
+            ->whereDoesntHave('commande')
+            ->count();
+
+        return view('partenaire.dashboard', compact(
+            'totalCollectes',
+            'totalPoids',
+            'totalPoints',
+            'enAttente',
+            'dernieresCommandes',
+            'offresDisponibles'
+        ));
     }
 
-    // Liste des déchets reçus (à valoriser)
+    // =============================================
+    // LISTE DES DÉCHETS REÇUS
+    // =============================================
     public function dechetsRecus()
     {
         $collectes = Collecte::whereIn('statut', ['realisee', 'valorisee'])
@@ -47,7 +67,9 @@ class PartenaireController extends BaseController
         return view('partenaire.dechets', compact('collectes'));
     }
 
-    // Valider la réception des déchets
+    // =============================================
+    // VALIDER LA RÉCEPTION DES DÉCHETS
+    // =============================================
     public function validerReception($id)
     {
         $collecte = Collecte::findOrFail($id);
@@ -61,10 +83,21 @@ class PartenaireController extends BaseController
         $collecte->date_reception = now();
         $collecte->save();
 
+        // Notification au collecteur
+        Notification::create([
+            'user_id' => $collecte->collecteur->user_id ?? null,
+            'titre' => '♻️ Déchets valorisés',
+            'message' => 'Les déchets de la collecte #' . $collecte->id . ' ont été valorisés par ' . Auth::user()->nom,
+            'type' => 'collecte',
+            'est_lu' => false,
+        ]);
+
         return redirect()->back()->with('success', 'Réception validée avec succès !');
     }
 
-    // Statistiques du partenaire
+    // =============================================
+    // STATISTIQUES
+    // =============================================
     public function statistiques()
     {
         $collectesParMois = Collecte::where('statut', 'valorisee')
@@ -85,6 +118,211 @@ class PartenaireController extends BaseController
         $totalOrganique = Collecte::where('statut', 'valorisee')->sum('poids_organique');
         $totalResiduel = Collecte::where('statut', 'valorisee')->sum('poids_residuel');
 
-        return view('partenaire.statistiques', compact('moisKeys', 'collectesParMoisValues', 'totalRecyclable', 'totalOrganique', 'totalResiduel'));
+        return view('partenaire.statistiques', compact(
+            'moisKeys',
+            'collectesParMoisValues',
+            'totalRecyclable',
+            'totalOrganique',
+            'totalResiduel'
+        ));
+    }
+
+    // =============================================
+    // OFFRES DE DÉCHETS DISPONIBLES
+    // =============================================
+    public function offres()
+    {
+        $collectes = Collecte::where('statut', 'realisee')
+            ->whereDoesntHave('commande')
+            ->with('user')
+            ->orderBy('date_collecte', 'desc')
+            ->paginate(12);
+
+        return view('partenaire.offres', compact('collectes'));
+    }
+
+    // =============================================
+    // FORMULAIRE DE COMMANDE
+    // =============================================
+    public function showCommandeForm($id)
+    {
+        $collecte = Collecte::with('user')->findOrFail($id);
+
+        // Vérifier que la collecte est disponible
+        if ($collecte->statut !== 'realisee') {
+            return redirect()->route('partenaire.offres')->with('error', 'Cette collecte n\'est plus disponible.');
+        }
+
+        if ($collecte->commande) {
+            return redirect()->route('partenaire.offres')->with('error', 'Cette collecte a déjà été commandée.');
+        }
+
+        return view('partenaire.commander', compact('collecte'));
+    }
+
+    // =============================================
+    // ENREGISTRER UNE COMMANDE
+    // =============================================
+    public function storeCommande(Request $request)
+    {
+        $request->validate([
+            'collecte_id' => 'required|exists:collectes,id',
+            'quantite' => 'required|numeric|min:0.1',
+            'prix_unitaire' => 'required|numeric|min:0',
+        ]);
+
+        $collecte = Collecte::find($request->collecte_id);
+        $quantite = $request->quantite;
+        $prixUnitaire = $request->prix_unitaire;
+
+        // Vérifier que la collecte existe et est disponible
+        if ($collecte->statut !== 'realisee') {
+            return back()->with('error', 'Cette collecte n\'est plus disponible.');
+        }
+
+        if ($collecte->commande) {
+            return back()->with('error', 'Cette collecte a déjà été commandée.');
+        }
+
+        // Vérifier la quantité disponible
+        $poidsTotal = $collecte->poids_recyclable + $collecte->poids_organique + $collecte->poids_residuel;
+        if ($quantite > $poidsTotal) {
+            return back()->with('error', 'Quantité demandée supérieure au poids disponible (' . number_format($poidsTotal, 1) . ' kg).');
+        }
+
+        // Créer la commande
+        $commande = Commande::create([
+            'partenaire_id' => Auth::id(),
+            'collecte_id' => $collecte->id,
+            'quantite' => $quantite,
+            'prix_unitaire' => $prixUnitaire,
+            'montant_total' => $quantite * $prixUnitaire,
+            'statut' => 'en_attente',
+        ]);
+
+        // Notifier l'admin
+        Notification::create([
+            'user_id' => 1, // admin
+            'titre' => '📦 Nouvelle commande',
+            'message' => 'Une commande a été passée par ' . Auth::user()->nom . ' pour la collecte #' . $collecte->id,
+            'type' => 'commande',
+            'est_lu' => false,
+        ]);
+
+        return redirect()->route('partenaire.historique')
+            ->with('success', 'Commande passée avec succès. En attente de validation.');
+    }
+
+    // =============================================
+    // HISTORIQUE DES COMMANDES
+    // =============================================
+    public function historique()
+    {
+        $commandes = Commande::where('partenaire_id', Auth::id())
+            ->with('collecte.user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        $stats = [
+            'total' => Commande::where('partenaire_id', Auth::id())->count(),
+            'en_attente' => Commande::where('partenaire_id', Auth::id())->where('statut', 'en_attente')->count(),
+            'validees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'validee')->count(),
+            'livrees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'livree')->count(),
+            'annulees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'annulee')->count(),
+        ];
+
+        return view('partenaire.historique', compact('commandes', 'stats'));
+    }
+
+    // =============================================
+    // GÉNÉRER UN CERTIFICAT DE VALORISATION
+    // =============================================
+    public function genererCertificat($commandeId)
+    {
+        $commande = Commande::with('collecte.user')->findOrFail($commandeId);
+
+        // Vérifier que la commande appartient au partenaire
+        if ($commande->partenaire_id != Auth::id()) {
+            abort(403);
+        }
+
+        // Vérifier que la commande est livrée
+        if ($commande->statut !== 'livree') {
+            return redirect()->route('partenaire.historique')
+                ->with('error', 'Le certificat ne peut être généré que pour une commande livrée.');
+        }
+
+        // Vérifier qu'un certificat n'existe pas déjà
+        $certificatExistant = CertificatValorisation::where('commande_id', $commandeId)->first();
+        if ($certificatExistant) {
+            return redirect()->route('partenaire.certificat.show', $certificatExistant->id);
+        }
+
+        $numeroCertificat = 'CERT-' . strtoupper(uniqid());
+
+        $certificat = CertificatValorisation::create([
+            'partenaire_id' => Auth::id(),
+            'commande_id' => $commande->id,
+            'numero_certificat' => $numeroCertificat,
+            'date_emission' => now(),
+            'quantite_valorisee' => $commande->quantite,
+            'type_valorisation' => 'Recyclage',
+            'description' => 'Valorisation de déchets provenant de la collecte #' . $commande->collecte_id,
+        ]);
+
+        // Mettre à jour la collecte
+        $commande->collecte->update(['statut' => 'valorisee']);
+
+        // Notifier le collecteur
+        if ($commande->collecte->collecteur) {
+            Notification::create([
+                'user_id' => $commande->collecte->collecteur->user_id,
+                'titre' => '📄 Certificat généré',
+                'message' => 'Un certificat de valorisation a été émis pour la collecte #' . $commande->collecte_id,
+                'type' => 'certificat',
+                'est_lu' => false,
+            ]);
+        }
+
+        return view('partenaire.certificat', compact('certificat', 'commande'));
+    }
+
+    // =============================================
+    // AFFICHER UN CERTIFICAT EXISTANT
+    // =============================================
+    public function showCertificat($id)
+    {
+        $certificat = CertificatValorisation::with('commande.collecte.user')->findOrFail($id);
+
+        if ($certificat->partenaire_id != Auth::id()) {
+            abort(403);
+        }
+
+        $commande = $certificat->commande;
+
+        return view('partenaire.certificat', compact('certificat', 'commande'));
+    }
+
+    // =============================================
+    // METTRE À JOUR LE PROFIL PARTENAIRE (BESOINS)
+    // =============================================
+    public function updateProfil(Request $request)
+    {
+        $partenaire = Partenaire::where('user_id', Auth::id())->firstOrFail();
+
+        $request->validate([
+            'type_partenaire' => 'required|string',
+            'filiere' => 'required|string',
+            'besoins' => 'nullable|string',
+        ]);
+
+        $partenaire->update([
+            'type_partenaire' => $request->type_partenaire,
+            'filiere' => $request->filiere,
+            'besoins' => $request->besoins,
+        ]);
+
+        return redirect()->route('partenaire.dashboard')
+            ->with('success', 'Profil mis à jour avec succès.');
     }
 }

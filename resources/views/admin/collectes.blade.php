@@ -3,14 +3,12 @@
 @section('title', 'Collectes')
 
 @section('content')
-    <div class="bg-white rounded-xl shadow-md">
+    <div class="bg-white rounded-xl shadow-soft">
         <div class="p-5 border-b flex justify-between items-center">
             <h3 class="font-semibold text-gray-800 flex items-center gap-2">
                 <i class="fas fa-truck text-emerald-500"></i> Gestion des collectes
             </h3>
-            <div class="text-sm text-gray-500">
-                Total : {{ $collectes->total() }} collecte(s)
-            </div>
+            <span class="text-sm text-gray-500">Total : {{ $collectes->total() }}</span>
         </div>
 
         <div class="overflow-x-auto p-5">
@@ -40,15 +38,13 @@
                             <td class="py-3 font-semibold text-yellow-600">{{ $collecte->points_obtenus }} pts</td>
                             <td class="py-3">
                                 @if ($collecte->statut == 'realisee')
-                                    <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800"> Réalisée</span>
+                                    <span class="badge-success"> Réalisée</span>
                                 @elseif($collecte->statut == 'planifiee')
-                                    <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"> Planifiée</span>
+                                    <span class="badge-info"> Planifiée</span>
                                 @elseif($collecte->statut == 'valorisee')
-                                    <span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
-                                        Valorisee</span>
+                                    <span class="badge-warning">Valorisee</span>
                                 @else
-                                    <span
-                                        class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">{{ $collecte->statut }}</span>
+                                    <span class="badge-gray">{{ $collecte->statut }}</span>
                                 @endif
                             </td>
                         </tr>
@@ -61,8 +57,6 @@
             </table>
         </div>
 
-        <div class="p-5 border-t">
-            {{ $collectes->links() }}
-        </div>
+        <div class="p-5 border-t">{{ $collectes->links() }}</div>
     </div>
 @endsection

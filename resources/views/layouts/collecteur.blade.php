@@ -5,83 +5,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collecteur - Gestion Déchets Dakar</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite('resources/css/app.css')
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div class="w-72 bg-gradient-to-b from-blue-700 to-blue-900 text-white flex flex-col">
-            <div class="p-5 border-b border-blue-600">
-                <h1 class="text-xl font-bold"> Gestion Déchets</h1>
-                <p class="text-xs text-blue-300 mt-1">Espace Collecteur</p>
+        <div class="w-72 bg-gradient-to-b from-emerald-800 to-emerald-950 text-white flex flex-col shadow-2xl">
+            <div class="p-5 border-b border-emerald-700">
+                <div class="flex items-center gap-2">
+                    <div class="text-2xl">🛵</div>
+                    <div>
+                        <h1 class="text-xl font-bold">Gestion Déchets</h1>
+                        <p class="text-xs text-emerald-300">Espace Collecteur</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="p-4 mx-3 mt-4 bg-blue-800/50 rounded-lg">
+            <div class="p-4 mx-3 mt-4 bg-emerald-700/50 rounded-lg">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div
+                        class="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-lg font-bold">
                         {{ substr(auth()->user()->prenom, 0, 1) }}{{ substr(auth()->user()->nom, 0, 1) }}
                     </div>
                     <div>
                         <p class="font-semibold">{{ auth()->user()->prenom }} {{ auth()->user()->nom }}</p>
-                        <p class="text-xs text-blue-300">{{ auth()->user()->email }}</p>
+                        <p class="text-xs text-emerald-300">{{ auth()->user()->email }}</p>
                     </div>
                 </div>
             </div>
 
             <nav class="flex-1 mt-6">
                 <a href="{{ route('collecteur.dashboard') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.dashboard') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-tachometer-alt mr-3"></i> Tableau de bord
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.dashboard') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-tachometer-alt w-5 mr-3"></i> Tableau de bord
                 </a>
-
                 <a href="{{ route('collecteur.tournee') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.tournee') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-map-marker-alt mr-3"></i> Ma tournée
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.tournee') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-map-marked-alt w-5 mr-3"></i> Ma tournée
                 </a>
-
                 <a href="{{ route('collecteur.activer-kit') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.activer-kit') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-qrcode mr-3"></i> Activer un kit
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.activer-kit') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-qrcode w-5 mr-3"></i> Activer un kit
                 </a>
-
                 <a href="{{ route('collecteur.enregistrer-collecte') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.enregistrer-collecte') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-clipboard-list mr-3"></i> Enregistrer collecte
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.enregistrer-collecte') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-clipboard-list w-5 mr-3"></i> Enregistrer collecte
                 </a>
-
                 <a href="{{ route('collecteur.historique') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.historique') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-history mr-3"></i> Historique
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.historique') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-history w-5 mr-3"></i> Historique
                 </a>
-
                 <a href="{{ route('collecteur.statistiques') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.statistiques') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-chart-bar mr-3"></i> Statistiques
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.statistiques') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-chart-bar w-5 mr-3"></i> Statistiques
                 </a>
-
-
-
-                <!-- ===== NOUVEAU LIEN MES PRIMES ===== -->
                 <a href="{{ route('collecteur.primes') }}"
-                    class="flex items-center px-5 py-3 text-blue-100 hover:bg-blue-800 transition
-                    {{ request()->routeIs('collecteur.primes') ? 'bg-blue-800 border-r-4 border-white' : '' }}">
-                    <i class="fas fa-coins mr-3"></i> Mes primes
+                    class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
+                    {{ request()->routeIs('collecteur.primes') ? 'sidebar-link-active' : '' }}">
+                    <i class="fas fa-coins w-5 mr-3"></i> Mes primes
                 </a>
             </nav>
 
-            <div class="p-4 border-t border-blue-600">
+            <div class="p-4 border-t border-emerald-700">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                        class="flex items-center w-full px-3 py-2 text-blue-200 hover:text-white hover:bg-blue-800 rounded-lg transition">
-                        <i class="fas fa-sign-out-alt mr-3"></i> Déconnexion
+                        class="flex items-center w-full px-3 py-2 text-emerald-200 hover:text-white hover:bg-emerald-700 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt w-5 mr-3"></i> Déconnexion
                     </button>
                 </form>
             </div>
@@ -89,19 +87,19 @@
 
         <!-- Contenu principal -->
         <div class="flex-1 overflow-y-auto">
-            <div class="bg-white shadow-sm px-6 py-4 sticky top-0 z-10">
+            <div class="header-primary">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-gray-800">@yield('title', 'Espace Collecteur')</h2>
-                    <span class="text-sm text-gray-500">{{ now()->format('d/m/Y H:i') }}</span>
+                    <h2 class="text-xl font-semibold">@yield('title', 'Espace Collecteur')</h2>
+                    <span class="text-sm text-emerald-100">{{ now()->format('d/m/Y H:i') }}</span>
                 </div>
             </div>
 
             <div class="p-6">
                 @if (session('success'))
-                    <div class="bg-green-500 text-white p-3 rounded mb-4">{{ session('success') }}</div>
+                    <div class="alert-success">{{ session('success') }}</div>
                 @endif
                 @if (session('error'))
-                    <div class="bg-red-500 text-white p-3 rounded mb-4">{{ session('error') }}</div>
+                    <div class="alert-danger">{{ session('error') }}</div>
                 @endif
                 @yield('content')
             </div>

@@ -4,40 +4,36 @@
 
 @section('content')
     <div class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-6">
+        <div class="bg-white rounded-xl shadow-soft p-6">
             <h1 class="text-2xl font-bold text-gray-800"> Ma tournée</h1>
             <p class="text-gray-500 mt-1">{{ now()->format('l d/m/Y') }}</p>
             <p class="text-sm text-emerald-600 mt-1">
                 Quartier : {{ auth()->user()->quartier ?? 'Non défini' }}
                 @if (auth()->user()->quartier)
-                    <span class="ml-2 text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        {{ $clients->count() ?? 0 }} client(s)
-                    </span>
+                    <span class="badge-info">{{ $clients->count() ?? 0 }} client(s)</span>
                 @endif
             </p>
         </div>
 
         <!-- Carte -->
-        <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="bg-white rounded-xl shadow-soft overflow-hidden">
             <div id="map" style="height: 450px; width: 100%;"></div>
         </div>
 
-        <!-- Liste des clients -->
-        <div class="bg-white rounded-xl shadow">
-            <div class="p-4 border-b bg-blue-50 rounded-t-xl">
-                <h2 class="text-lg font-bold text-blue-800">
-                    <i class="fas fa-users mr-2"></i> Clients à collecter aujourd'hui
-                </h2>
+        <!-- Liste clients -->
+        <div class="bg-white rounded-xl shadow-soft">
+            <div class="p-4 border-b bg-emerald-50 rounded-t-xl">
+                <h2 class="text-lg font-bold text-emerald-800"><i class="fas fa-users mr-2"></i> Clients à collecter
+                    aujourd'hui</h2>
             </div>
             <div class="p-4">
                 @if (isset($clients) && $clients->count() > 0)
                     <div class="space-y-3">
                         @foreach ($clients as $client)
                             @php
-                                $collecteDuJour = $client->collectes
-                                    ->where('statut', 'planifiee')
-                                    ->whereDate('date_collecte', today())
-                                    ->first();
+                                // Le contrôleur a déjà filtré les collectes du jour avec statut 'planifiee'
+                                // On récupère la première collecte (il n'y en a qu'une par client dans ce contexte)
+                                $collecteDuJour = $client->collectes->first();
                             @endphp
                             @if ($collecteDuJour)
                                 <div
@@ -47,21 +43,18 @@
                                         <p class="text-sm text-gray-500"> {{ $client->adresse }}</p>
                                         <p class="text-xs text-gray-400">Quartier: {{ $client->quartier }}</p>
                                         @if ($client->latitude && $client->longitude)
-                                            <span class="text-xs text-green-600"> Localisé</span>
+                                            <span class="text-xs text-emerald-600"> Localisé</span>
                                         @else
                                             <span class="text-xs text-orange-500"> Coordonnées manquantes</span>
                                         @endif
                                     </div>
-                                    <!-- ========================================== -->
-                                    <!--  DEUX BOUTONS : COLLECTER + ANOMALIE   -->
-                                    <!-- ========================================== -->
                                     <div class="flex gap-2">
                                         <a href="{{ route('collecteur.collecte.form', $client->id) }}"
-                                            class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm">
+                                            class="btn-primary text-sm">
                                             Collecter
                                         </a>
                                         <a href="{{ route('collecteur.anomalie.creer', $client->id) }}"
-                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                            class="btn-danger text-sm">
                                             Anomalie
                                         </a>
                                     </div>
@@ -122,31 +115,26 @@
 
                         // Contenu du popup
                         var collecte = client.collectes ? client.collectes.find(c => c.statut ===
-                            'planifiee' && c.date_collecte === '{{ today()->toDateString() }}') : null;
+                            'planifiee') : null;
                         var heures = collecte ? new Date(collecte.date_collecte).toLocaleTimeString(
-                            'fr-FR', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            }) : 'Non défini';
+                        'fr-FR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : 'Non défini';
 
                         marker.bindPopup(`
-                            <div style="font-size:14px;">
-                                <strong>${client.prenom} ${client.nom}</strong><br>
-                                 ${client.adresse}<br>
-                                 ${client.telephone || 'Non renseigné'}<br>
-                                 Collecte prévue : ${heures}
-                                <br><br>
-                                <a href="{{ route('collecteur.collecte.form', '') }}/${client.id}"
-                                   style="background:#10b981; color:white; padding:4px 12px; border-radius:4px; text-decoration:none;">
-                                    Collecter
-                                </a>
-                                <br>
-                                <a href="{{ route('collecteur.anomalie.creer', '') }}/${client.id}"
-                                   style="background:#ef4444; color:white; padding:4px 12px; border-radius:4px; text-decoration:none; margin-top:4px; display:inline-block;">
-                                    Anomalie
-                                </a>
-                            </div>
-                        `);
+                        <div style="font-size:14px;">
+                            <strong>${client.prenom} ${client.nom}</strong><br>
+                             ${client.adresse}<br>
+                             ${client.telephone || 'Non renseigné'}<br>
+                             Collecte prévue : ${heures}
+                            <br><br>
+                            <a href="{{ route('collecteur.collecte.form', '') }}/${client.id}"
+                               style="background:#10b981; color:white; padding:4px 12px; border-radius:4px; text-decoration:none;">
+                                Collecter
+                            </a>
+                        </div>
+                    `);
 
                         marqueursAjoutes++;
                     }

@@ -92,7 +92,9 @@ class ZoneCollecteController extends BaseController
             'Fann',
             'Point E',
             'Sicap',
+            'Nord Foire',
             'Mbao',
+
             'Keur Massar'
         ];
         return view('admin.zones.edit', compact('zone', 'collecteurs', 'quartiersDisponibles'));

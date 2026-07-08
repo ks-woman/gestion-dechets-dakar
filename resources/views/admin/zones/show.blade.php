@@ -3,18 +3,18 @@
 @section('title', 'Détail de la zone')
 
 @section('content')
-    <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="bg-white rounded-xl shadow-soft p-6">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-gray-800">{{ $zone->nom }}</h1>
-            <a href="{{ route('admin.zones.index') }}" class="text-blue-500 hover:underline">← Retour</a>
+            <a href="{{ route('admin.zones.index') }}" class="text-emerald-600 hover:underline">← Retour</a>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div>
                 <p><strong>Description :</strong> {{ $zone->description ?? 'Aucune' }}</p>
                 <p><strong>Quartiers :</strong> {{ implode(', ', $zone->quartiers ?? []) }}</p>
-                <p><strong>Nombre de clients :</strong> {{ $zone->nombre_clients }}</p>
-                <p><strong>Collectes totales :</strong> {{ $zone->nombre_collectes }}</p>
+                <p><strong>Nombre de clients :</strong> <span class="badge-success">{{ $zone->nombre_clients }}</span></p>
+                <p><strong>Collectes totales :</strong> <span class="badge-info">{{ $zone->nombre_collectes }}</span></p>
             </div>
             <div>
                 <p><strong>Collecteurs affectés :</strong></p>
@@ -48,7 +48,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="py-4 text-center text-gray-500">Aucun client dans cette zone.</td>
+                        <td colspan="4" class="py-4 text-center text-gray-500">Aucun client</td>
                     </tr>
                 @endforelse
             </tbody>
