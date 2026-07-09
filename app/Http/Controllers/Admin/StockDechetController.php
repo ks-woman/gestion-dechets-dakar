@@ -10,7 +10,8 @@ class StockDechetController extends Controller
 {
     public function index()
     {
-        $stocks = StockDechet::all();
+        //  Charger la relation 'categorie'
+        $stocks = StockDechet::with('categorie')->get();
         return view('admin.stocks.index', compact('stocks'));
     }
 

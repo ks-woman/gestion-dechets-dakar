@@ -197,7 +197,7 @@ class CollecteController extends BaseController
         ]);
 
         // ============================================================
-        // 🆕 AJOUT : Incrémenter les stocks de déchets
+        //  AJOUT : Incrémenter les stocks de déchets
         // ============================================================
         StockDechet::incrementer('recyclable', $poidsRecyclable);
         StockDechet::incrementer('organique', $poidsOrganique);

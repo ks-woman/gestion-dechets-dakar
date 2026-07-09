@@ -8,27 +8,40 @@
             <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 <i class="fas fa-warehouse text-emerald-500"></i> Gestion des stocks
             </h1>
-            <p class="text-gray-500 mt-1">Gérez les quantités et les prix unitaires des déchets.</p>
+            <p class="text-gray-500 mt-1">Consultez les quantités disponibles par catégorie de déchet.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @foreach ($stocks as $stock)
-                <div class="bg-white rounded-xl shadow-soft border p-6">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-3xl">
-                            @if ($stock->type == 'recyclable')
-                            @elseif($stock->type == 'organique')
-                            @else
-                            @endif
-                        </span>
-                        <h3 class="text-xl font-bold text-gray-800 capitalize">{{ $stock->type }}</h3>
+                @php
+                    $couleur = $stock->categorie->couleur ?? 'gray';
+                @endphp
+                <div
+                    class="bg-white rounded-xl shadow-soft border border-{{ $couleur }}-200 overflow-hidden hover:shadow-lg transition">
+                    <!-- En-tête coloré -->
+                    <div
+                        class="px-4 py-2 bg-{{ $couleur }}-50 border-b border-{{ $couleur }}-200 flex items-center gap-2">
+                        <span class="text-3xl">{{ $stock->categorie->icone ?? '📦' }}</span>
+                        <h3 class="text-lg font-bold text-gray-800">{{ $stock->categorie->nom }}</h3>
                     </div>
-                    <p class="text-3xl font-bold text-emerald-600">{{ number_format($stock->quantite, 1) }} kg</p>
-                    <p class="text-sm text-gray-500">Prix : {{ number_format($stock->prix_unitaire ?? 0, 0) }} FCFA/kg</p>
-                    <div class="mt-4">
+
+                    <!-- Contenu -->
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-500">Quantité</span>
+                            <span class="text-2xl font-bold text-emerald-600">{{ number_format($stock->quantite, 1) }}
+                                kg</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-500">Prix unitaire</span>
+                            <span
+                                class="text-lg font-semibold text-gray-700">{{ number_format($stock->prix_unitaire ?? 0, 0) }}
+                                FCFA/kg</span>
+                        </div>
+
                         <a href="{{ route('admin.stocks.edit', $stock->id) }}"
                             class="btn-primary text-sm w-full text-center block">
-                            <i class="fas fa-edit mr-2"></i> Modifier
+                            <i class="fas fa-edit mr-1"></i> Modifier
                         </a>
                     </div>
                 </div>

@@ -9,6 +9,8 @@ class CategorieDechet extends Model
 {
     use HasFactory;
 
+    protected $table = 'categories_dechet';
+
     protected $fillable = [
         'nom',
         'icone',

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use App\Models\StockDechet;
+use App\Models\CategorieDechet;
 
 class PartenaireController extends BaseController
 {
@@ -35,15 +36,12 @@ class PartenaireController extends BaseController
 
         // Dernières commandes du partenaire
         $dernieresCommandes = Commande::where('partenaire_id', Auth::id())
-            ->with('collecte.user')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        // Nombre d'offres disponibles
-        $offresDisponibles = Collecte::where('statut', 'realisee')
-            ->whereDoesntHave('commande')
-            ->count();
+        // Nombre d'offres disponibles (basé sur les stocks)
+        $offresDisponibles = StockDechet::sum('quantite') > 0 ? StockDechet::count() : 0;
 
         return view('partenaire.dashboard', compact(
             'totalCollectes',
@@ -96,37 +94,7 @@ class PartenaireController extends BaseController
         return redirect()->back()->with('success', 'Réception validée avec succès !');
     }
 
-    // =============================================
-    // STATISTIQUES
-    // =============================================
-    public function statistiques()
-    {
-        $collectesParMois = Collecte::where('statut', 'valorisee')
-            ->selectRaw('MONTH(date_reception) as mois, COUNT(*) as total')
-            ->whereYear('date_reception', now()->year)
-            ->groupBy('mois')
-            ->orderBy('mois')
-            ->pluck('total', 'mois')
-            ->toArray();
 
-        $moisKeys = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        $collectesParMoisValues = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $collectesParMoisValues[] = $collectesParMois[$i] ?? 0;
-        }
-
-        $totalRecyclable = Collecte::where('statut', 'valorisee')->sum('poids_recyclable');
-        $totalOrganique = Collecte::where('statut', 'valorisee')->sum('poids_organique');
-        $totalResiduel = Collecte::where('statut', 'valorisee')->sum('poids_residuel');
-
-        return view('partenaire.statistiques', compact(
-            'moisKeys',
-            'collectesParMoisValues',
-            'totalRecyclable',
-            'totalOrganique',
-            'totalResiduel'
-        ));
-    }
 
     // =============================================
     // FORMULAIRE DE COMMANDE
@@ -268,30 +236,69 @@ class PartenaireController extends BaseController
     public function storeCommande(Request $request)
     {
         $request->validate([
-            'type_dechet' => 'required|in:recyclable,organique,residuel',
+            'categorie_id' => 'required|exists:categories_dechet,id',
             'quantite' => 'required|numeric|min:0.1',
             'prix_unitaire' => 'required|numeric|min:0',
         ]);
 
-        $stock = StockDechet::where('type', $request->type_dechet)->first();
+        $stock = StockDechet::where('categorie_id', $request->categorie_id)->first();
 
         if (!$stock || $stock->quantite < $request->quantite) {
-            return back()->with('error', 'Stock insuffisant. Disponible : ' . ($stock->quantite ?? 0) . ' kg');
+            return back()->with('error', 'Stock insuffisant.');
         }
 
-        // Créer la commande
         $commande = Commande::create([
             'partenaire_id' => Auth::id(),
-            'type_dechet' => $request->type_dechet,
+            'categorie_id' => $request->categorie_id,
             'quantite' => $request->quantite,
             'prix_unitaire' => $request->prix_unitaire,
             'montant_total' => $request->quantite * $request->prix_unitaire,
             'statut' => 'en_attente',
         ]);
 
-        // Réserver le stock (le décrémenter immédiatement ou à la validation)
-        StockDechet::decrementer($request->type_dechet, $request->quantite);
+        StockDechet::decrementer($request->categorie_id, $request->quantite);
 
-        return redirect()->route('partenaire.historique')->with('success', 'Commande passée avec succès.');
+        return redirect()->route('partenaire.historique')->with('success', 'Commande passée.');
+    }
+
+    public function statistiques()
+    {
+        $user = Auth::id();
+
+        // Statistiques générales
+        $totalCommandes = Commande::where('partenaire_id', $user)->count();
+        $quantiteTotale = Commande::where('partenaire_id', $user)->sum('quantite');
+        $montantTotal = Commande::where('partenaire_id', $user)->sum('montant_total');
+
+        // Volumes par catégorie
+        $categories = CategorieDechet::pluck('nom');
+        $volumesParCategorie = [];
+        foreach (CategorieDechet::all() as $cat) {
+            $volumesParCategorie[] = Commande::where('partenaire_id', $user)
+                ->where('categorie_id', $cat->id)
+                ->sum('quantite');
+        }
+
+        // Commandes par mois (6 derniers mois)
+        $moisCommandes = [];
+        $nbCommandesParMois = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $mois = now()->subMonths($i);
+            $moisCommandes[] = $mois->format('M Y');
+            $nbCommandesParMois[] = Commande::where('partenaire_id', $user)
+                ->whereYear('created_at', $mois->year)
+                ->whereMonth('created_at', $mois->month)
+                ->count();
+        }
+
+        return view('partenaire.statistiques', compact(
+            'totalCommandes',
+            'quantiteTotale',
+            'montantTotal',
+            'categories',
+            'volumesParCategorie',
+            'moisCommandes',
+            'nbCommandesParMois'
+        ));
     }
 }

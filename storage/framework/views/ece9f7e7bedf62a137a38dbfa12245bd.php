@@ -1,8 +1,6 @@
-@extends('layouts.partenaire')
+<?php $__env->startSection('title', 'Offres de déchets'); ?>
 
-@section('title', 'Offres de déchets')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="space-y-6">
         <div class="bg-white rounded-xl shadow-soft p-6">
             <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -12,46 +10,46 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @forelse($stocks as $stock)
+            <?php $__empty_1 = true; $__currentLoopData = $stocks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $stock): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-xl shadow-soft border p-4 hover:shadow-lg transition">
                     <div class="flex items-center gap-2 mb-2">
-                        @if ($stock->categorie)
-                            <span class="text-3xl">{{ $stock->categorie->icone ?? '' }}</span>
-                            <h3 class="text-lg font-bold text-gray-800">{{ $stock->categorie->nom }}</h3>
-                        @else
+                        <?php if($stock->categorie): ?>
+                            <span class="text-3xl"><?php echo e($stock->categorie->icone ?? ''); ?></span>
+                            <h3 class="text-lg font-bold text-gray-800"><?php echo e($stock->categorie->nom); ?></h3>
+                        <?php else: ?>
                             <span class="text-3xl"></span>
                             <h3 class="text-lg font-bold text-gray-800">Catégorie inconnue</h3>
-                        @endif
+                        <?php endif; ?>
                     </div>
 
                     <div class="mt-2">
-                        <p class="text-2xl font-bold text-emerald-600">{{ number_format($stock->quantite, 1) }} kg</p>
-                        <p class="text-sm text-gray-500">Prix : {{ number_format($stock->prix_unitaire ?? 0, 0) }} FCFA/kg
+                        <p class="text-2xl font-bold text-emerald-600"><?php echo e(number_format($stock->quantite, 1)); ?> kg</p>
+                        <p class="text-sm text-gray-500">Prix : <?php echo e(number_format($stock->prix_unitaire ?? 0, 0)); ?> FCFA/kg
                         </p>
                     </div>
 
-                    @if ($stock->quantite > 0)
+                    <?php if($stock->quantite > 0): ?>
                         <div class="mt-3">
                             <button
-                                onclick="openCommandeForm('{{ $stock->categorie->id }}', '{{ $stock->categorie->nom }}', {{ $stock->quantite }}, {{ $stock->prix_unitaire }})"
+                                onclick="openCommandeForm('<?php echo e($stock->categorie->id); ?>', '<?php echo e($stock->categorie->nom); ?>', <?php echo e($stock->quantite); ?>, <?php echo e($stock->prix_unitaire); ?>)"
                                 class="btn-primary w-full text-center block">
                                 <i class="fas fa-cart-plus mr-2"></i> Commander
                             </button>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="mt-3">
                             <button disabled class="btn-gray w-full text-center block cursor-not-allowed">
                                 <i class="fas fa-times-circle mr-2"></i> Rupture de stock
                             </button>
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
-            @empty
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="col-span-3 text-center py-12 text-gray-500">
                     <i class="fas fa-box-open text-4xl mb-2 block"></i>
                     <p>Aucune offre disponible pour le moment.</p>
                 </div>
-            @endforelse
+            <?php endif; ?>
         </div>
     </div>
 
@@ -59,8 +57,8 @@
     <div id="commandeModal" class="fixed inset-0 bg-gray-900/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
             <h2 class="text-xl font-bold text-gray-800 mb-4"> Passer commande</h2>
-            <form method="POST" action="{{ route('partenaire.commander.store') }}">
-                @csrf
+            <form method="POST" action="<?php echo e(route('partenaire.commander.store')); ?>">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="categorie_id" id="modal_categorie_id">
 
                 <div class="mb-4">
@@ -111,4 +109,6 @@
             }
         });
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.partenaire', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\wamp64\www\gestion-dechets-dakar\resources\views/partenaire/offres.blade.php ENDPATH**/ ?>

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partenaire - Gestion Déchets Dakar</title>
-    @vite('resources/css/app.css')
+    <?php echo app('Illuminate\Foundation\Vite')('resources/css/app.css'); ?>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
@@ -27,42 +27,43 @@
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-lg font-bold text-white">
-                        {{ substr(auth()->user()->prenom, 0, 1) }}{{ substr(auth()->user()->nom, 0, 1) }}
+                        <?php echo e(substr(auth()->user()->prenom, 0, 1)); ?><?php echo e(substr(auth()->user()->nom, 0, 1)); ?>
+
                     </div>
                     <div>
-                        <p class="font-semibold text-white">{{ auth()->user()->prenom }} {{ auth()->user()->nom }}</p>
-                        <p class="text-xs text-white/70">{{ auth()->user()->email }}</p>
+                        <p class="font-semibold text-white"><?php echo e(auth()->user()->prenom); ?> <?php echo e(auth()->user()->nom); ?></p>
+                        <p class="text-xs text-white/70"><?php echo e(auth()->user()->email); ?></p>
                     </div>
                 </div>
             </div>
 
             <nav class="flex-1 overflow-y-auto mt-4 px-2">
-                <a href="{{ route('partenaire.dashboard') }}"
+                <a href="<?php echo e(route('partenaire.dashboard')); ?>"
                     class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    {{ request()->routeIs('partenaire.dashboard') ? 'bg-emerald-700' : '' }}">
+                    <?php echo e(request()->routeIs('partenaire.dashboard') ? 'bg-emerald-700' : ''); ?>">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i> Tableau de bord
                 </a>
-                <a href="{{ route('partenaire.offres') }}"
+                <a href="<?php echo e(route('partenaire.offres')); ?>"
                     class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    {{ request()->routeIs('partenaire.offres') ? 'bg-emerald-700' : '' }}">
+                    <?php echo e(request()->routeIs('partenaire.offres') ? 'bg-emerald-700' : ''); ?>">
                     <i class="fas fa-boxes w-5 mr-3"></i> Offres
                 </a>
 
-                <a href="{{ route('partenaire.historique') }}"
+                <a href="<?php echo e(route('partenaire.historique')); ?>"
                     class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    {{ request()->routeIs('partenaire.historique') ? 'bg-emerald-700' : '' }}">
+                    <?php echo e(request()->routeIs('partenaire.historique') ? 'bg-emerald-700' : ''); ?>">
                     <i class="fas fa-history w-5 mr-3"></i> Historique
                 </a>
-                <a href="{{ route('partenaire.statistiques') }}"
+                <a href="<?php echo e(route('partenaire.statistiques')); ?>"
                     class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    {{ request()->routeIs('partenaire.statistiques') ? 'bg-emerald-700' : '' }}">
+                    <?php echo e(request()->routeIs('partenaire.statistiques') ? 'bg-emerald-700' : ''); ?>">
                     <i class="fas fa-chart-bar w-5 mr-3"></i> Statistiques
                 </a>
             </nav>
 
             <div class="p-4 border-t border-emerald-700 mt-auto flex-shrink-0">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('logout')); ?>">
+                    <?php echo csrf_field(); ?>
                     <button type="submit"
                         class="flex items-center w-full px-3 py-2 text-white/70 hover:text-white hover:bg-emerald-700 rounded-lg transition">
                         <i class="fas fa-sign-out-alt w-5 mr-3"></i> Déconnexion
@@ -75,22 +76,23 @@
         <div class="flex-1 overflow-y-auto">
             <div class="header-primary">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-white">@yield('title', 'Espace Partenaire')</h2>
-                    <span class="text-sm text-white/80">{{ now()->format('d/m/Y H:i') }}</span>
+                    <h2 class="text-xl font-semibold text-white"><?php echo $__env->yieldContent('title', 'Espace Partenaire'); ?></h2>
+                    <span class="text-sm text-white/80"><?php echo e(now()->format('d/m/Y H:i')); ?></span>
                 </div>
             </div>
 
             <div class="p-6">
-                @if (session('success'))
-                    <div class="alert-success">{{ session('success') }}</div>
-                @endif
-                @if (session('error'))
-                    <div class="alert-danger">{{ session('error') }}</div>
-                @endif
-                @yield('content')
+                <?php if(session('success')): ?>
+                    <div class="alert-success"><?php echo e(session('success')); ?></div>
+                <?php endif; ?>
+                <?php if(session('error')): ?>
+                    <div class="alert-danger"><?php echo e(session('error')); ?></div>
+                <?php endif; ?>
+                <?php echo $__env->yieldContent('content'); ?>
             </div>
         </div>
     </div>
 </body>
 
 </html>
+<?php /**PATH C:\wamp64\www\gestion-dechets-dakar\resources\views/layouts/partenaire.blade.php ENDPATH**/ ?>
