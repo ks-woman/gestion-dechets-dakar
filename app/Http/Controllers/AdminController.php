@@ -9,6 +9,8 @@ use App\Models\Menage;
 use App\Models\Entreprise;
 use App\Models\Collecteur;
 use App\Models\Partenaire;
+use App\Models\Commande;
+use App\Models\ZoneCollecte;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -240,13 +242,13 @@ class AdminController extends BaseController
         return redirect()->route('admin.utilisateurs')->with('success', 'Utilisateur supprimé avec succès !');
     }
 
-
+    // =============================================
+    // PAGE GESTION COLLECTEURS (disponibilité)
+    // =============================================
     public function collecteursDisponibilite()
     {
-        // Récupérer tous les collecteurs avec leur utilisateur
         $collecteurs = Collecteur::with('user')->get();
 
-        // Enrichir chaque collecteur avec ses statistiques du jour
         $collecteurs->each(function ($collecteur) {
             $collecteur->collectes_aujourdhui = Collecte::where('collecteur_id', $collecteur->id)
                 ->whereDate('date_collecte', today())
@@ -256,9 +258,6 @@ class AdminController extends BaseController
                 ->whereIn('statut', ['affectee', 'en_livraison'])
                 ->count();
 
-            // Déterminer le statut de disponibilité
-            // Règle : occupé si plus de 3 collectes + commandes en cours > 2
-            // Partiel si entre 1 et 3, Disponible si 0
             $totalActivites = $collecteur->collectes_aujourdhui + $collecteur->commandes_en_cours;
 
             if ($totalActivites == 0) {
@@ -276,56 +275,97 @@ class AdminController extends BaseController
         return view('admin.collecteurs', compact('collecteurs'));
     }
 
-/**
- * Récupère les informations d'une commande pour le modal
- */
-public function commandeInfos($id)
-{
-    $commande = Commande::with(['partenaire', 'categorie'])->findOrFail($id);
-    
-    return response()->json([
-        'id' => $commande->id,
-        'partenaire' => $commande->partenaire->prenom . ' ' . $commande->partenaire->nom,
-        'categorie' => $commande->categorie->nom ?? 'Non défini',
-        'quantite' => number_format($commande->quantite, 1),
-        'montant' => number_format($commande->montant_total, 0, ',', ' '),
-        'adresse' => $commande->partenaire->adresse ?? 'Non renseignée',
-    ]);
-}
+    // =============================================
+    // INFOS COMMANDE (pour le modal)
+    // =============================================
+    public function commandeInfos($id)
+    {
+        $commande = Commande::with(['partenaire', 'categorie'])->findOrFail($id);
 
-/**
- * Récupère la liste des collecteurs disponibles pour une commande
- */
-public function collecteursDisponibles($commandeId)
-{
-    $commande = Commande::findOrFail($commandeId);
-    
-    // Collecteurs déjà occupés aujourd'hui (collectes ou commandes en cours)
-    $date = now()->toDateString();
-    
-    $collecteursOccupes = Collecte::whereDate('date_collecte', $date)
-        ->whereIn('statut', ['planifiee', 'en_cours'])
-        ->pluck('collecteur_id')
-        ->merge(
-            Commande::whereDate('date_affectation', $date)
-                ->whereIn('statut', ['affectee', 'en_livraison'])
-                ->pluck('collecteur_id')
-        )
-        ->unique()
-        ->toArray();
+        return response()->json([
+            'id' => $commande->id,
+            'partenaire' => $commande->partenaire->prenom . ' ' . $commande->partenaire->nom,
+            'categorie' => $commande->categorie->nom ?? 'Non défini',
+            'quantite' => number_format($commande->quantite, 1),
+            'montant' => number_format($commande->montant_total, 0, ',', ' '),
+            'adresse' => $commande->partenaire->adresse ?? 'Non renseignée',
+            'quartier' => $commande->partenaire->quartier ?? 'Non renseigné',
+        ]);
+    }
 
-    // Collecteurs disponibles (non occupés, disponibles, et pas déjà affectés à cette commande)
-    $collecteurs = Collecteur::with('user')
-        ->whereNotIn('id', $collecteursOccupes)
-        ->where('disponibilite', true)
-        ->orderBy('id')
-        ->get();
+    // =============================================
+    // LISTE DES COLLECTEURS DISPONIBLES (avec filtre zone + enrichissement)
+    // =============================================
+    public function collecteursDisponibles(Request $request, $commandeId)
+    {
+        $commande = Commande::with('partenaire')->findOrFail($commandeId);
+        $partenaire = $commande->partenaire;
+
+        // 1. Récupérer les zones du partenaire via son quartier
+        $zones = ZoneCollecte::all()->filter(function ($zone) use ($partenaire) {
+            $quartiers = is_array($zone->quartiers) ? $zone->quartiers : json_decode($zone->quartiers, true);
+            return in_array($partenaire->quartier, $quartiers ?? []);
+        });
+        $collecteursIdsZone = $zones->flatMap->collecteurs->pluck('id')->unique()->toArray();
+
+        //  SECOURS : si aucun collecteur trouvé via la zone, on prend tous les disponibles
+        // (permet de faire fonctionner l'affectation même si le filtrage zone échoue)
+        if (empty($collecteursIdsZone)) {
+            $collecteursIdsZone = Collecteur::where('disponibilite', true)->pluck('id')->toArray();
         }
 
-        // Ajouter des informations utiles pour l'affichage
+        // 2. Collecteurs déjà occupés aujourd'hui
+        $date = now()->toDateString();
+        $occupes = Collecte::whereDate('date_collecte', $date)
+            ->whereIn('statut', ['planifiee', 'en_cours'])
+            ->pluck('collecteur_id')
+            ->merge(
+                Commande::whereDate('date_affectation', $date)
+                    ->whereIn('statut', ['affectee', 'en_livraison'])
+                    ->pluck('collecteur_id')
+            )
+            ->unique()
+            ->toArray();
+
+        // 3. Voir tous ou seulement ceux de la zone ?
+        $voirTous = $request->input('tous', false);
+        if ($voirTous) {
+            $collecteurs = Collecteur::with('user')
+                ->whereNotIn('id', $occupes)
+                ->where('disponibilite', true)
+                ->get();
+        } else {
+            if (empty($collecteursIdsZone)) {
+                return response()->json([
+                    'collecteurs' => [],
+                    'zone_vide' => true,
+                    'message' => 'Aucun collecteur trouvé pour ce quartier.',
+                    'partenaire_quartier' => $partenaire->quartier,
+                ]);
+            }
+
+            $collecteurs = Collecteur::with('user')
+                ->whereIn('id', $collecteursIdsZone)
+                ->whereNotIn('id', $occupes)
+                ->where('disponibilite', true)
+                ->get();
+        }
+
+        // 4. Enrichir les données pour l'affichage (inclure les zones complètes du collecteur)
         $collecteurs->each(function ($collecteur) {
             $zone = $collecteur->zones()->first();
             $collecteur->zone_nom = $zone ? $zone->nom : 'Aucune zone';
+
+            //  Ajout : inclure toutes les zones du collecteur avec leurs quartiers
+            // pour que le JavaScript puisse tester si le collecteur est dans la zone du partenaire
+            $collecteur->zones = $collecteur->zones->map(function ($z) {
+                return [
+                    'id' => $z->id,
+                    'nom' => $z->nom,
+                    'quartiers' => is_array($z->quartiers) ? $z->quartiers : json_decode($z->quartiers, true),
+                ];
+            });
+
             $collecteur->activites_aujourdhui = Collecte::where('collecteur_id', $collecteur->id)
                 ->whereDate('date_collecte', today())
                 ->whereIn('statut', ['planifiee', 'en_cours'])
@@ -348,47 +388,43 @@ public function collecteursDisponibles($commandeId)
     // =============================================
     // AFFECTER UN COLLECTEUR À UNE COMMANDE
     // =============================================
-public function affecterCollecteur(Request $request, $id)
-{
-    $request->validate([
-        'collecteur_id' => 'required|exists:collecteurs,id',
-    ]);
+    public function affecterCollecteur(Request $request, $id)
+    {
+        $request->validate([
+            'collecteur_id' => 'required|exists:collecteurs,id',
+        ]);
 
-    $commande = Commande::findOrFail($id);
-    
-    // Vérifier que la commande est dans un état valide (en attente ou validée)
-    if (!in_array($commande->statut, ['en_attente', 'validee'])) {
-        return redirect()->back()->with('error', 'Cette commande ne peut pas être affectée.');
-    }
+        $commande = Commande::findOrFail($id);
 
-    // Vérifier que le collecteur n'est pas déjà occupé
-    $collecteur = Collecteur::find($request->collecteur_id);
-    // Ici on pourrait faire une vérification supplémentaire (optionnelle)
+        if (!in_array($commande->statut, ['en_attente', 'validee'])) {
+            return redirect()->back()->with('error', 'Cette commande ne peut pas être affectée.');
+        }
 
-    // Affecter le collecteur
-    $commande->collecteur_id = $request->collecteur_id;
-    $commande->statut = 'affectee';
-    $commande->date_affectation = now();
-    $commande->save();
+        $collecteur = Collecteur::find($request->collecteur_id);
 
-    // Notification au collecteur
-    \App\Models\Notification::create([
-        'user_id' => $collecteur->user_id,
-        'titre' => ' Nouvelle livraison',
-        'message' => 'Vous avez été affecté à la livraison de la commande #' . $commande->id . ' pour le partenaire ' . $commande->partenaire->nom . ' ' . $commande->partenaire->prenom,
-        'type' => 'commande',
-        'est_lu' => false,
-    ]);
+        $commande->collecteur_id = $request->collecteur_id;
+        $commande->statut = 'affectee';
+        $commande->date_affectation = now();
+        $commande->save();
 
-    // Notification au partenaire (optionnelle)
-    \App\Models\Notification::create([
-        'user_id' => $commande->partenaire_id,
-        'titre' => ' Commande en cours de livraison',
-        'message' => 'Votre commande #' . $commande->id . ' a été prise en charge par le collecteur ' . $collecteur->user->prenom . ' ' . $collecteur->user->nom,
-        'type' => 'commande',
-        'est_lu' => false,
-    ]);
+        // Notification au collecteur
+        \App\Models\Notification::create([
+            'user_id' => $collecteur->user_id,
+            'titre' => ' Nouvelle livraison',
+            'message' => 'Vous avez été affecté à la livraison de la commande #' . $commande->id . ' pour le partenaire ' . $commande->partenaire->nom . ' ' . $commande->partenaire->prenom,
+            'type' => 'commande',
+            'est_lu' => false,
+        ]);
 
-    return redirect()->route('admin.commandes.index')->with('success', 'Collecteur affecté avec succès !');
+        // Notification au partenaire
+        \App\Models\Notification::create([
+            'user_id' => $commande->partenaire_id,
+            'titre' => ' Commande en cours de livraison',
+            'message' => 'Votre commande #' . $commande->id . ' a été prise en charge par le collecteur ' . $collecteur->user->prenom . ' ' . $collecteur->user->nom,
+            'type' => 'commande',
+            'est_lu' => false,
+        ]);
+
+        return redirect()->route('admin.commandes.index')->with('success', 'Collecteur affecté avec succès !');
     }
 }

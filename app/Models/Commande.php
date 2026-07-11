@@ -11,16 +11,19 @@ class Commande extends Model
 
     protected $fillable = [
         'partenaire_id',
-        'collecte_id',
+        'categorie_id',
         'quantite',
         'prix_unitaire',
         'montant_total',
         'statut',
-        'date_livraison'
+        'date_livraison',
+        'collecteur_id',
+        'date_affectation'
     ];
 
     protected $casts = [
         'date_livraison' => 'date',
+        'date_affectation' => 'datetime',
     ];
 
     public function partenaire()
@@ -36,5 +39,15 @@ class Commande extends Model
     public function certificat()
     {
         return $this->hasOne(CertificatValorisation::class);
+    }
+
+    public function collecteur()
+    {
+        return $this->belongsTo(Collecteur::class);
+    }
+
+    public function categorie()
+    {
+        return $this->belongsTo(CategorieDechet::class);
     }
 }

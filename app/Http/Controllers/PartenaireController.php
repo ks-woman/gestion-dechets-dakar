@@ -85,7 +85,7 @@ class PartenaireController extends BaseController
         // Notification au collecteur
         Notification::create([
             'user_id' => $collecte->collecteur->user_id ?? null,
-            'titre' => '♻️ Déchets valorisés',
+            'titre' => ' Déchets valorisés',
             'message' => 'Les déchets de la collecte #' . $collecte->id . ' ont été valorisés par ' . Auth::user()->nom,
             'type' => 'collecte',
             'est_lu' => false,

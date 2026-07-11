@@ -1,8 +1,6 @@
-@extends('layouts.auth')
+<?php $__env->startSection('title', 'Créer un compte'); ?>
 
-@section('title', 'Créer un compte')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="w-full max-w-4xl mx-auto px-4">
         <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8">
             <!-- En-tête -->
@@ -15,7 +13,7 @@
             <!-- Grille des rôles -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Ménage -->
-                <a href="{{ route('register.menage.form') }}"
+                <a href="<?php echo e(route('register.menage.form')); ?>"
                     class="group block bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-emerald-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
                     <div
                         class="bg-emerald-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-emerald-500 transition-colors duration-300">
@@ -30,7 +28,7 @@
                 </a>
 
                 <!-- Entreprise -->
-                <a href="{{ route('register.entreprise.form') }}"
+                <a href="<?php echo e(route('register.entreprise.form')); ?>"
                     class="group block bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-blue-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
                     <div
                         class="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-500 transition-colors duration-300">
@@ -45,7 +43,7 @@
                 </a>
 
                 <!-- Collecteur -->
-                <a href="{{ route('register.collecteur.form') }}"
+                <a href="<?php echo e(route('register.collecteur.form')); ?>"
                     class="group block bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-purple-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
                     <div
                         class="bg-purple-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-purple-500 transition-colors duration-300">
@@ -60,7 +58,7 @@
                 </a>
 
                 <!-- Partenaire -->
-                <a href="{{ route('register.partenaire.form') }}"
+                <a href="<?php echo e(route('register.partenaire.form')); ?>"
                     class="group block bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-orange-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
                     <div
                         class="bg-orange-100 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-orange-500 transition-colors duration-300">
@@ -78,10 +76,12 @@
             <!-- Lien vers connexion -->
             <p class="text-center text-gray-600 text-sm mt-6">
                 Déjà un compte ?
-                <a href="{{ route('login') }}" class="text-emerald-600 hover:text-emerald-700 font-medium hover:underline">
+                <a href="<?php echo e(route('login')); ?>" class="text-emerald-600 hover:text-emerald-700 font-medium hover:underline">
                     Se connecter
                 </a>
             </p>
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.auth', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\wamp64\www\gestion-dechets-dakar\resources\views/auth/choose-role.blade.php ENDPATH**/ ?>

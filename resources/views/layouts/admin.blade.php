@@ -92,6 +92,12 @@
    {{ request()->routeIs('admin.commandes*') ? 'bg-emerald-700' : '' }}">
                     <i class="fas fa-shopping-cart w-5 mr-3"></i> Commandes
                 </a>
+
+                <a href="{{ route('admin.collecteurs') }}"
+                    class="flex items-center px-5 py-3 text-white hover:bg-emerald-700 transition
+    {{ request()->routeIs('admin.collecteurs*') ? 'bg-emerald-700' : '' }}">
+                    <i class="fas fa-users w-5 mr-3"></i> Collecteurs
+                </a>
             </nav>
 
             <div class="p-4 border-t border-emerald-700">

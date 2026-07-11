@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Recompense;
 use App\Models\PrimeCollecteur;
 use App\Models\Anomalie;
+use App\Models\Commande;
 
 class CollecteurController extends BaseController
 {
@@ -57,13 +58,20 @@ class CollecteurController extends BaseController
             ->orderBy('date_collecte', 'asc')
             ->get();
 
+        // 🆕 Commandes à livrer par ce collecteur
+        $commandesALivrer = Commande::where('collecteur_id', $collecteur->id)
+            ->where('statut', 'affectee')
+            ->with(['partenaire', 'categorie'])
+            ->get();
+
         return view('collecteur.dashboard', compact(
             'notifications',
             'nonLues',
             'kitsALivrer',
             'collectesAujourdhui',
             'collectesMois',
-            'collectes'
+            'collectes',
+            'commandesALivrer' // ajouté
         ));
     }
 
@@ -191,7 +199,6 @@ class CollecteurController extends BaseController
                 case 'Résiduel':
                     $poids = $poidsResiduel;
                     break;
-                // Ajoutez d'autres cas si vous avez des champs spécifiques
                 default:
                     $poids = 0;
                     break;
@@ -245,7 +252,7 @@ class CollecteurController extends BaseController
         $kit = KitTri::where('code_unique', $code)->first();
 
         if (!$kit) {
-            return redirect()->route('collecteur.dashboard')->with('error', ' Code de kit invalide.');
+            return redirect()->route('collecteur.dashboard')->with('error', '❌ Code de kit invalide.');
         }
 
         if ($kit->statut === 'actif') {
@@ -279,7 +286,7 @@ class CollecteurController extends BaseController
 
         Notification::create([
             'user_id' => $menage->id,
-            'titre' => 'Votre kit est activé !',
+            'titre' => ' Votre kit est activé !',
             'message' => 'Votre kit de tri a été activé par le collecteur. Profitez de 15 jours d\'essai gratuit.',
             'type' => 'kit',
             'est_lu' => false
@@ -500,5 +507,43 @@ class CollecteurController extends BaseController
 
         return redirect()->route('collecteur.tournee')
             ->with('success', 'Anomalie signalée avec succès !');
+    }
+
+    // =============================================
+    //  LIVRAISON D'UNE COMMANDE
+    // =============================================
+    public function livrerCommande($id)
+    {
+        $commande = Commande::with('partenaire')->findOrFail($id);
+
+        // Vérifier que le collecteur est bien celui affecté
+        if ($commande->collecteur_id != Auth::user()->collecteur->id) {
+            abort(403, 'Vous n\'êtes pas autorisé à livrer cette commande.');
+        }
+
+        // Vérifier que la commande est bien en statut "affectee"
+        if ($commande->statut !== 'affectee') {
+            return redirect()->back()->with('error', 'Cette commande n\'est pas en cours de livraison.');
+        }
+
+        // Mettre à jour la commande
+        $commande->statut = 'livree';
+        $commande->date_livraison = now();
+        $commande->save();
+
+        // Notification au partenaire
+        Notification::create([
+            'user_id' => $commande->partenaire_id,
+            'titre' => ' Commande livrée',
+            'message' => 'Votre commande #' . $commande->id . ' a été livrée par ' . Auth::user()->prenom . ' ' . Auth::user()->nom,
+            'type' => 'commande',
+            'est_lu' => false,
+        ]);
+
+        // Notification à l'admin (optionnel)
+        // $admins = User::where('role', 'admin')->get();
+        // foreach ($admins as $admin) { ... }
+
+        return redirect()->route('collecteur.dashboard')->with('success', ' Livraison confirmée !');
     }
 }
