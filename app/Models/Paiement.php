@@ -12,14 +12,14 @@ class Paiement extends Model
     protected $fillable = [
         'abonnement_id',
         'montant',
-        'date_paiement',
+        'reference',
         'mode_paiement',
-        'reference_transaction',
-        'statut'
+        'statut',
+        'date_paiement'
     ];
 
     protected $casts = [
-        'date_paiement' => 'date',
+        'date_paiement' => 'datetime',
     ];
 
     public function abonnement()
@@ -27,17 +27,13 @@ class Paiement extends Model
         return $this->belongsTo(Abonnement::class);
     }
 
-    public function validerPaiement()
+    public function user()
     {
-        $this->statut = 'valide';
-        $this->save();
+        return $this->hasOneThrough(User::class, Abonnement::class, 'id', 'id', 'abonnement_id', 'user_id');
+    }
 
-        $abonnement = $this->abonnement;
-        $abonnement->statut = 'actif';
-        $abonnement->date_debut_abonnement = now();
-        $abonnement->save();
-
-        $abonnement->user->statut_compte = 'abonne_actif';
-        $abonnement->user->save();
+    public function estValide()
+    {
+        return $this->statut === 'valide';
     }
 }

@@ -19,9 +19,9 @@ class Abonnement extends Model
     ];
 
     protected $casts = [
-        'date_debut_essai' => 'date',
-        'date_fin_essai' => 'date',
-        'date_debut_abonnement' => 'date',
+        'date_debut_essai' => 'datetime',
+        'date_fin_essai' => 'datetime',
+        'date_debut_abonnement' => 'datetime',
     ];
 
     public function user()
@@ -42,6 +42,11 @@ class Abonnement extends Model
     public function estEnEssai()
     {
         return $this->statut === 'essai';
+    }
+
+    public function estExpire()
+    {
+        return $this->statut === 'expire';
     }
 
     public function verifierFinEssai()

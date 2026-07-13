@@ -1,8 +1,6 @@
-@extends('layouts.menage')
+<?php $__env->startSection('title', 'Demander mon kit de tri'); ?>
 
-@section('title', 'Demander mon kit de tri')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- Bannière -->
         <div class="bg-gradient-to-r from-emerald-600 to-emerald-800 px-6 py-6 text-white">
@@ -16,12 +14,12 @@
         </div>
 
         <div class="p-6">
-            @php
+            <?php
                 $kit = auth()->user()->kitTri;
                 $statutCompte = auth()->user()->statut_compte;
-            @endphp
+            ?>
 
-            @if ($kit && $kit->statut == 'en_attente')
+            <?php if($kit && $kit->statut == 'en_attente'): ?>
                 <!-- Cas 1 : Kit en attente -->
                 <div class="text-center py-8">
                     <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -33,18 +31,18 @@
                     </p>
                     <div class="mt-4 inline-block bg-gray-100 px-4 py-2 rounded-lg">
                         <span class="text-sm text-gray-500">Code :</span>
-                        <span class="font-mono text-sm font-semibold">{{ $kit->code_qr }}</span>
+                        <span class="font-mono text-sm font-semibold"><?php echo e($kit->code_qr); ?></span>
                     </div>
                     <div class="mt-6">
-                        <a href="{{ route('menage.dashboard') }}"
+                        <a href="<?php echo e(route('menage.dashboard')); ?>"
                             class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition">
                             <i class="fas fa-arrow-left"></i> Retour
                         </a>
                     </div>
                 </div>
-            @elseif($kit && in_array($kit->statut, ['livre', 'actif']))
+            <?php elseif($kit && in_array($kit->statut, ['livre', 'actif'])): ?>
                 <!-- Cas 2 : Kit livré ou actif -->
-                @if ($statutCompte == 'essai_15j')
+                <?php if($statutCompte == 'essai_15j'): ?>
                     <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
                         <div class="flex items-start gap-4">
                             <div
@@ -65,7 +63,7 @@
                                         gagnés</span>
                                 </div>
                                 <div class="mt-4">
-                                    <a href="{{ route('collecte.demander') }}"
+                                    <a href="<?php echo e(route('collecte.demander')); ?>"
                                         class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition">
                                         <i class="fas fa-truck"></i> Demander une collecte
                                     </a>
@@ -73,7 +71,7 @@
                             </div>
                         </div>
                     </div>
-                @elseif($statutCompte == 'abonne_actif')
+                <?php elseif($statutCompte == 'abonne_actif'): ?>
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
                         <div class="flex items-start gap-4">
                             <div class="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -85,7 +83,7 @@
                                     Votre kit de tri est actif. Vous pouvez demander des collectes à tout moment.
                                 </p>
                                 <div class="mt-4">
-                                    <a href="{{ route('collecte.demander') }}"
+                                    <a href="<?php echo e(route('collecte.demander')); ?>"
                                         class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition">
                                         <i class="fas fa-truck"></i> Demander une collecte
                                     </a>
@@ -93,7 +91,7 @@
                             </div>
                         </div>
                     </div>
-                @else
+                <?php else: ?>
                     <div class="text-center py-8">
                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <span class="text-5xl"></span>
@@ -101,14 +99,14 @@
                         <h3 class="text-xl font-bold text-gray-800">Kit disponible</h3>
                         <p class="text-gray-500 mt-2">Votre kit est prêt à être utilisé.</p>
                         <div class="mt-6">
-                            <a href="{{ route('menage.dashboard') }}"
+                            <a href="<?php echo e(route('menage.dashboard')); ?>"
                                 class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition">
                                 <i class="fas fa-arrow-left"></i> Retour
                             </a>
                         </div>
                     </div>
-                @endif
-            @else
+                <?php endif; ?>
+            <?php else: ?>
                 <!-- Cas 3 : Pas de kit → Formulaire -->
                 <div>
                     <!-- Présentation du kit -->
@@ -159,8 +157,8 @@
                     </div>
 
                     <!-- Formulaire -->
-                    <form method="POST" action="{{ route('kit.demander.post') }}" class="border-t pt-6">
-                        @csrf
+                    <form method="POST" action="<?php echo e(route('kit.demander.post')); ?>" class="border-t pt-6">
+                        <?php echo csrf_field(); ?>
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-gray-700 text-sm font-medium mb-2">Type de kit</label>
@@ -190,7 +188,9 @@
                         </div>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.menage', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\wamp64\www\gestion-dechets-dakar\resources\views/kit/demander.blade.php ENDPATH**/ ?>

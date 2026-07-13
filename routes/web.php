@@ -149,6 +149,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('categories', CategorieDechetController::class)->except(['show']);
 
     // =============================================
+    // GESTION DES ABONNEMENTS (ADMIN)
+    // =============================================
+    Route::get('/abonnements', [App\Http\Controllers\Admin\AbonnementController::class, 'index'])->name('abonnements.index');
+    Route::get('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'show'])->name('abonnements.show');
+    Route::put('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'update'])->name('abonnements.update');
+    Route::post('/abonnements/{id}/activer', [App\Http\Controllers\Admin\AbonnementController::class, 'activer'])->name('abonnements.activer');
+
+    // =============================================
     //  GESTION DES COMMANDES
     // =============================================
     Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');
@@ -166,6 +174,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/stocks', [StockDechetController::class, 'index'])->name('stocks.index');
     Route::get('/stocks/{id}/edit', [StockDechetController::class, 'edit'])->name('stocks.edit');
     Route::put('/stocks/{id}', [StockDechetController::class, 'update'])->name('stocks.update');
+});
+
+// =============================================
+// ROUTES ABONNEMENT
+// =============================================
+Route::middleware(['auth'])->prefix('abonnement')->name('abonnement.')->group(function () {
+    Route::get('/', [App\Http\Controllers\AbonnementController::class, 'index'])->name('index');
+    Route::post('/souscrire', [App\Http\Controllers\AbonnementController::class, 'souscrire'])->name('souscrire');
+    Route::post('/annuler', [App\Http\Controllers\AbonnementController::class, 'annuler'])->name('annuler');
+    Route::get('/historique', [App\Http\Controllers\AbonnementController::class, 'historique'])->name('historique');
 });
 
 // =============================================

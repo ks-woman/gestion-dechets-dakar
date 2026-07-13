@@ -88,6 +88,13 @@
                     <?php echo e(request()->routeIs('recompenses*') ? 'bg-emerald-700' : ''); ?>">
                     <i class="fas fa-gift w-5 mr-3"></i> Récompenses
                 </a>
+
+                <a href="<?php echo e(route('abonnement.index')); ?>"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
+    <?php echo e(request()->routeIs('abonnement*') ? 'bg-emerald-700' : ''); ?>">
+                    <i class="fas fa-credit-card w-5 mr-3"></i> Mon abonnement
+                </a>
+
             </nav>
 
             <!-- Pied de sidebar (collé en bas) -->

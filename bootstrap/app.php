@@ -23,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('collecteur:calculer-primes')->monthlyOn(1, '00:00');
     })
 
+    ->withSchedule(function ($schedule) {
+        $schedule->command('abonnements:verifier')->dailyAt('08:00');
+    })
+
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
