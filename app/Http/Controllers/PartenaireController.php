@@ -10,6 +10,7 @@ use App\Models\Partenaire;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use App\Models\StockDechet;
 use App\Models\CategorieDechet;
 
@@ -58,6 +59,8 @@ class PartenaireController extends BaseController
     // =============================================
     public function dechetsRecus()
     {
+        //  Pas de vérification spécifique : les collectes sont publiques pour les partenaires
+        // (car le partenaire peut voir toutes les collectes réalisées)
         $collectes = Collecte::whereIn('statut', ['realisee', 'valorisee'])
             ->with('user')
             ->orderBy('date_collecte', 'desc')
@@ -71,6 +74,9 @@ class PartenaireController extends BaseController
     // =============================================
     public function validerReception($id)
     {
+        //  Vérification : seul un partenaire peut valider la réception
+        $this->authorize('valider-reception');
+
         $collecte = Collecte::findOrFail($id);
 
         if ($collecte->statut !== 'realisee') {
@@ -85,7 +91,7 @@ class PartenaireController extends BaseController
         // Notification au collecteur
         Notification::create([
             'user_id' => $collecte->collecteur->user_id ?? null,
-            'titre' => ' Déchets valorisés',
+            'titre' => '♻️ Déchets valorisés',
             'message' => 'Les déchets de la collecte #' . $collecte->id . ' ont été valorisés par ' . Auth::user()->nom,
             'type' => 'collecte',
             'est_lu' => false,
@@ -93,8 +99,6 @@ class PartenaireController extends BaseController
 
         return redirect()->back()->with('success', 'Réception validée avec succès !');
     }
-
-
 
     // =============================================
     // FORMULAIRE DE COMMANDE
@@ -120,6 +124,7 @@ class PartenaireController extends BaseController
     // =============================================
     public function historique()
     {
+        //  Filtré automatiquement par partenaire_id, pas besoin de vérification supplémentaire
         $commandes = Commande::where('partenaire_id', Auth::id())
             ->with('collecte.user')
             ->orderBy('created_at', 'desc')
@@ -228,13 +233,26 @@ class PartenaireController extends BaseController
             ->with('success', 'Profil mis à jour avec succès.');
     }
 
+    // =============================================
+    // OFFRES (liste des stocks disponibles)
+    // =============================================
     public function offres()
     {
+        // ✅ Vérification : seul un partenaire peut voir les offres
+        $this->authorize('create', Commande::class);
+
         $stocks = StockDechet::all();
         return view('partenaire.offres', compact('stocks'));
     }
+
+    // =============================================
+    // PASSER UNE COMMANDE
+    // =============================================
     public function storeCommande(Request $request)
     {
+        //  Vérification : seul un partenaire peut passer une commande
+        $this->authorize('create', Commande::class);
+
         $request->validate([
             'categorie_id' => 'required|exists:categories_dechet,id',
             'quantite' => 'required|numeric|min:0.1',
@@ -258,11 +276,15 @@ class PartenaireController extends BaseController
 
         StockDechet::decrementer($request->categorie_id, $request->quantite);
 
-        return redirect()->route('partenaire.historique')->with('success', 'Commande passée.');
+        return redirect()->route('partenaire.historique')->with('success', 'Commande passée avec succès.');
     }
 
+    // =============================================
+    // STATISTIQUES DU PARTENAIRE
+    // =============================================
     public function statistiques()
     {
+        //  Pas de vérification spécifique car filtré par partenaire_id
         $user = Auth::id();
 
         // Statistiques générales

@@ -14,12 +14,17 @@ class Paiement extends Model
         'montant',
         'reference',
         'mode_paiement',
+        'gateway',
+        'transaction_id',
         'statut',
-        'date_paiement'
+        'gateway_response',
+        'date_paiement',
+        'date_validation',
     ];
 
     protected $casts = [
         'date_paiement' => 'datetime',
+        'date_validation' => 'datetime',
     ];
 
     public function abonnement()
@@ -35,5 +40,21 @@ class Paiement extends Model
     public function estValide()
     {
         return $this->statut === 'valide';
+    }
+
+    public function estEnAttente()
+    {
+        return $this->statut === 'en_attente';
+    }
+
+    public function estEchoue()
+    {
+        return $this->statut === 'echoue';
+    }
+
+    // Correspondance avec le diagramme : modePaiement est l'énumération
+    public function getModePaiementAttribute($value)
+    {
+        return $value; // paiementMobile, paiementBancaire, especes
     }
 }

@@ -20,7 +20,7 @@
             <!-- Plastiques & Métaux -->
             <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 shadow-sm">
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="text-3xl">🥫</span>
+                    <span class="text-3xl"></span>
                     <h3 class="text-lg font-bold text-blue-800">Plastiques & Métaux</h3>
                 </div>
                 <p class="text-gray-700 text-sm">Déposez ici tous les emballages en plastique (bouteilles, flacons, sachets)

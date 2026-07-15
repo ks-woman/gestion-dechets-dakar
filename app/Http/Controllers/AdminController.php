@@ -13,6 +13,7 @@ use App\Models\Commande;
 use App\Models\ZoneCollecte;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Gate;
 
 class AdminController extends BaseController
 {
@@ -22,8 +23,21 @@ class AdminController extends BaseController
         $this->middleware('admin');
     }
 
+    /**
+     * Vérifie que l'utilisateur est un administrateur
+     * (utilisation manuelle pour éviter les problèmes de Gate::before)
+     */
+    private function checkAdmin()
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Cette action est réservée aux administrateurs.');
+        }
+    }
+
     public function dashboard()
     {
+        $this->checkAdmin();
+
         $stats = [
             'total_users' => User::count(),
             'total_menages' => User::where('role', 'menage')->count(),
@@ -38,8 +52,13 @@ class AdminController extends BaseController
         return view('admin.dashboard', compact('stats', 'recentUsers'));
     }
 
+    /**
+     * Liste des utilisateurs
+     */
     public function utilisateurs(Request $request)
     {
+        $this->checkAdmin();
+
         $query = User::with(['menage', 'entreprise', 'collecteur']);
 
         if ($request->filled('search')) {
@@ -57,14 +76,24 @@ class AdminController extends BaseController
         return view('admin.utilisateurs', compact('users'));
     }
 
+    /**
+     * Liste des collectes
+     */
     public function collectes()
     {
+        $this->checkAdmin();
+
         $collectes = Collecte::with('user')->orderBy('created_at', 'desc')->paginate(20);
         return view('admin.collectes', compact('collectes'));
     }
 
+    /**
+     * Liste des kits
+     */
     public function kits()
     {
+        $this->checkAdmin();
+
         $kits = KitTri::with('user')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
@@ -72,8 +101,13 @@ class AdminController extends BaseController
         return view('admin.kits', compact('kits'));
     }
 
+    /**
+     * Statistiques
+     */
     public function statistiques()
     {
+        $this->checkAdmin();
+
         // Collectes par mois
         $collectesParMois = Collecte::selectRaw('MONTH(created_at) as mois, COUNT(*) as total')
             ->whereYear('created_at', now()->year)
@@ -143,13 +177,22 @@ class AdminController extends BaseController
         ));
     }
 
+    /**
+     * Formulaire de création d'utilisateur
+     */
     public function createUtilisateur()
     {
+        $this->checkAdmin();
         return view('admin.utilisateurs-create');
     }
 
+    /**
+     * Enregistrer un nouvel utilisateur
+     */
     public function storeUtilisateur(Request $request)
     {
+        $this->checkAdmin();
+
         $request->validate([
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
@@ -189,14 +232,22 @@ class AdminController extends BaseController
         return redirect()->route('admin.utilisateurs')->with('success', 'Utilisateur créé avec succès !');
     }
 
+    /**
+     * Formulaire d'édition d'un utilisateur
+     */
     public function editUtilisateur($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
         return view('admin.utilisateurs-edit', compact('user'));
     }
 
+    /**
+     * Mettre à jour un utilisateur
+     */
     public function updateUtilisateur(Request $request, $id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         $request->validate([
@@ -229,8 +280,12 @@ class AdminController extends BaseController
         return redirect()->route('admin.utilisateurs')->with('success', 'Utilisateur modifié avec succès !');
     }
 
+    /**
+     * Supprimer un utilisateur
+     */
     public function destroyUtilisateur($id)
     {
+        $this->checkAdmin();
         $user = User::findOrFail($id);
 
         if ($user->role == 'admin') {
@@ -247,6 +302,8 @@ class AdminController extends BaseController
     // =============================================
     public function collecteursDisponibilite()
     {
+        $this->checkAdmin();
+
         $collecteurs = Collecteur::with('user')->get();
 
         $collecteurs->each(function ($collecteur) {
@@ -280,6 +337,7 @@ class AdminController extends BaseController
     // =============================================
     public function commandeInfos($id)
     {
+        $this->checkAdmin();
         $commande = Commande::with(['partenaire', 'categorie'])->findOrFail($id);
 
         return response()->json([
@@ -298,6 +356,7 @@ class AdminController extends BaseController
     // =============================================
     public function collecteursDisponibles(Request $request, $commandeId)
     {
+        $this->checkAdmin();
         $commande = Commande::with('partenaire')->findOrFail($commandeId);
         $partenaire = $commande->partenaire;
 
@@ -308,8 +367,7 @@ class AdminController extends BaseController
         });
         $collecteursIdsZone = $zones->flatMap->collecteurs->pluck('id')->unique()->toArray();
 
-        //  SECOURS : si aucun collecteur trouvé via la zone, on prend tous les disponibles
-        // (permet de faire fonctionner l'affectation même si le filtrage zone échoue)
+        // SECOURS : si aucun collecteur trouvé via la zone, on prend tous les disponibles
         if (empty($collecteursIdsZone)) {
             $collecteursIdsZone = Collecteur::where('disponibilite', true)->pluck('id')->toArray();
         }
@@ -351,13 +409,11 @@ class AdminController extends BaseController
                 ->get();
         }
 
-        // 4. Enrichir les données pour l'affichage (inclure les zones complètes du collecteur)
+        // 4. Enrichir les données pour l'affichage
         $collecteurs->each(function ($collecteur) {
             $zone = $collecteur->zones()->first();
             $collecteur->zone_nom = $zone ? $zone->nom : 'Aucune zone';
 
-            //  Ajout : inclure toutes les zones du collecteur avec leurs quartiers
-            // pour que le JavaScript puisse tester si le collecteur est dans la zone du partenaire
             $collecteur->zones = $collecteur->zones->map(function ($z) {
                 return [
                     'id' => $z->id,
@@ -390,6 +446,8 @@ class AdminController extends BaseController
     // =============================================
     public function affecterCollecteur(Request $request, $id)
     {
+        $this->checkAdmin();
+
         $request->validate([
             'collecteur_id' => 'required|exists:collecteurs,id',
         ]);

@@ -15,7 +15,7 @@
         <div class="w-72 bg-gradient-to-b from-emerald-800 to-emerald-950 text-white flex flex-col shadow-2xl">
             <div class="p-5 border-b border-emerald-700">
                 <div class="flex items-center gap-2">
-                    <div class="text-2xl">🛵</div>
+                    <div class="text-2xl"></div>
                     <div>
                         <h1 class="text-xl font-bold">Gestion Déchets</h1>
                         <p class="text-xs text-emerald-300">Espace Collecteur</p>
@@ -71,6 +71,21 @@
                     class="flex items-center px-5 py-3 text-emerald-100 hover:bg-emerald-700 transition
                     {{ request()->routeIs('collecteur.primes') ? 'sidebar-link-active' : '' }}">
                     <i class="fas fa-coins w-5 mr-3"></i> Mes primes
+                </a>
+
+                <a href="{{ route('notifications.index') }}"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
+    {{ request()->routeIs('notifications*') ? 'bg-emerald-700' : '' }}">
+                    <i class="fas fa-bell w-5 mr-3"></i> Notifications
+                    @php
+                        $nonLues = App\Models\Notification::where('user_id', auth()->id())
+                            ->where('est_lu', false)
+                            ->count();
+                    @endphp
+                    @if ($nonLues > 0)
+                        <span
+                            class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $nonLues }}</span>
+                    @endif
                 </a>
             </nav>
 

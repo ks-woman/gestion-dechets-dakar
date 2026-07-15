@@ -1,77 +1,149 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Models\User;
+use App\Http\Controllers\Controller;
+use App\Models\Abonnement;
 use App\Models\Paiement;
-use App\Services\PaiementService;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\Auth;
 
-class AbonnementController extends BaseController
+class AbonnementController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
+    /**
+     * Liste des abonnements
+     */
     public function index()
     {
-        $user = Auth::user();
-        $abonnement = $user->abonnement;
-        $paiements = Paiement::whereHas('abonnement', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->orderBy('created_at', 'desc')->take(10)->get();
+        $abonnements = Abonnement::with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
-        return view('abonnement.index', compact('user', 'abonnement', 'paiements'));
+        $stats = [
+            'total' => Abonnement::count(),
+            'essai' => Abonnement::where('statut', 'essai')->count(),
+            'actif' => Abonnement::where('statut', 'actif')->count(),
+            'expire' => Abonnement::where('statut', 'expire')->count(),
+            'resilie' => Abonnement::where('statut', 'resilie')->count(),
+        ];
+
+        return view('admin.abonnements.index', compact('abonnements', 'stats'));
     }
 
-    public function souscrire(Request $request)
+    /**
+     * Détail d'un abonnement
+     */
+    public function show($id)
     {
-        $user = Auth::user();
-
-        // Vérifier si l'utilisateur est déjà abonné
-        if ($user->abonnement && $user->abonnement->estActif()) {
-            return redirect()->back()->with('error', 'Vous êtes déjà abonné.');
-        }
-
-        $service = new PaiementService();
-        $paiement = $service->simulerPaiement($user, 'wave');
-
-        return redirect()->route('abonnement.index')->with('success', '✅ Votre abonnement est activé !');
+        $abonnement = Abonnement::with('user', 'paiements')->findOrFail($id);
+        return view('admin.abonnements.show', compact('abonnement'));
     }
 
-    public function annuler()
+    /**
+     * Activer un abonnement
+     */
+    public function activer($id)
     {
-        $user = Auth::user();
-        $abonnement = $user->abonnement;
-        if ($abonnement) {
-            $abonnement->statut = 'resilie';
-            $abonnement->save();
-        }
-        $user->statut_compte = 'inactif';
-        $user->abonnement_statut = 'inactif';
-        $user->save();
+        $abonnement = Abonnement::findOrFail($id);
 
-        Notification::create([
-            'user_id' => $user->id,
-            'titre' => ' Abonnement annulé',
-            'message' => 'Votre abonnement a été annulé. Vous pouvez le réactiver à tout moment.',
-            'type' => 'abonnement',
-            'est_lu' => false,
+        if ($abonnement->statut === 'actif') {
+            return redirect()->back()->with('info', "Cet abonnement est déjà actif.");
+        }
+
+        $abonnement->statut = 'actif';
+        $abonnement->date_debut_abonnement = now();
+        $abonnement->save();
+
+        // Mettre à jour le compte utilisateur
+        $user = $abonnement->user;
+        if ($user) {
+            $user->statut_compte = 'abonne_actif';
+            $user->save();
+        }
+
+        return redirect()->route('admin.abonnements.index')
+            ->with('success', "✅ L'abonnement #{$id} a été activé avec succès.");
+    }
+
+    /**
+     * Résilier un abonnement
+     */
+    public function resilier($id)
+    {
+        $abonnement = Abonnement::findOrFail($id);
+
+        if ($abonnement->statut === 'resilie') {
+            return redirect()->back()->with('info', "Cet abonnement est déjà résilié.");
+        }
+
+        $abonnement->statut = 'resilie';
+        $abonnement->save();
+
+        // Mettre à jour le compte utilisateur
+        $user = $abonnement->user;
+        if ($user) {
+            $user->statut_compte = 'inactif';
+            $user->save();
+        }
+
+        return redirect()->route('admin.abonnements.index')
+            ->with('success', "⛔ L'abonnement #{$id} a été résilié.");
+    }
+
+    /**
+     * Modifier le montant de l'abonnement
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'montant_mensuel' => 'required|numeric|min:1000',
         ]);
 
-        return redirect()->route('abonnement.index')->with('success', 'Votre abonnement a été annulé.');
+        $abonnement = Abonnement::findOrFail($id);
+        $abonnement->montant_mensuel = $request->montant_mensuel;
+        $abonnement->save();
+
+        return redirect()->route('admin.abonnements.show', $id)
+            ->with('success', "💰 Le montant a été mis à jour : " . number_format($request->montant_mensuel, 0) . " FCFA");
     }
 
-    public function historique()
+    /**
+     * Prolonger la période d'essai
+     */
+    public function prolonger(Request $request, $id)
     {
-        $user = Auth::user();
-        $paiements = Paiement::whereHas('abonnement', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->orderBy('created_at', 'desc')->paginate(15);
+        $request->validate([
+            'jours' => 'required|integer|min:1|max:90',
+        ]);
 
-        return view('abonnement.historique', compact('paiements'));
+        $abonnement = Abonnement::findOrFail($id);
+
+        if ($abonnement->statut !== 'essai') {
+            return redirect()->back()->with('error', "Seul un abonnement en période d'essai peut être prolongé.");
+        }
+
+        $abonnement->date_fin_essai = $abonnement->date_fin_essai->addDays($request->jours);
+        $abonnement->save();
+
+        // Mettre à jour le compte utilisateur
+        $user = $abonnement->user;
+        if ($user) {
+            $user->date_fin_essai = $abonnement->date_fin_essai;
+            $user->save();
+        }
+
+        return redirect()->route('admin.abonnements.show', $id)
+            ->with('success', "⏰ La période d'essai a été prolongée de {$request->jours} jours.");
+    }
+
+    /**
+     * Historique des paiements d'un abonnement
+     */
+    public function paiements($id)
+    {
+        $abonnement = Abonnement::with('paiements')->findOrFail($id);
+        $paiements = $abonnement->paiements()->orderBy('created_at', 'desc')->paginate(15);
+
+        return view('admin.abonnements.paiements', compact('abonnement', 'paiements'));
     }
 }

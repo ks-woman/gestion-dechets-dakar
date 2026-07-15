@@ -35,4 +35,25 @@ return [
         ],
     ],
 
+
+    'wave' => [
+        'api_key' => env('WAVE_API_KEY'),
+        'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
+    ],
+
+    'orange_money' => [
+        'api_key' => env('ORANGE_MONEY_API_KEY'),
+        'base_url' => env('ORANGE_MONEY_BASE_URL', 'https://api.orange.com/orange-money/v1'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'payment' => [
+        'default_gateway' => env('PAYMENT_GATEWAY', 'wave'),
+    ],
+
 ];

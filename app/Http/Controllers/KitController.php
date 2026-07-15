@@ -7,22 +7,33 @@ use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // ✅ AJOUT
 
 class KitController extends \Illuminate\Routing\Controller
 {
+    use AuthorizesRequests; // ✅ AJOUT
+
     public function __construct()
     {
         $this->middleware('auth');
     }
 
-    // Afficher le formulaire de demande de kit
+    /**
+     * Afficher le formulaire de demande de kit
+     */
     public function showDemanderKit()
     {
+        // Le middleware menage filtre déjà, donc cette vérification est redondante mais on la garde si vous voulez
+        // $this->authorize('create', KitTri::class);
+
         return view('kit.demander');
     }
 
-    // Traiter la demande de kit
+    /**
+     * Traiter la demande de kit
+     */
     public function demanderKit(Request $request)
     {
         $user = Auth::user();
@@ -43,10 +54,10 @@ class KitController extends \Illuminate\Routing\Controller
         // Générer l'URL que le collecteur scannera
         $urlScan = route('collecteur.activer-kit.par-scan', ['code' => $codeUnique]);
 
-        // Créer le kit (utiliser le modèle amélioré)
+        // Créer le kit
         $kit = KitTri::create([
             'user_id' => $user->id,
-            'code_qr' => $codeUnique,          // Champ principal
+            'code_qr' => $codeUnique,
             'url_qr' => $urlScan,
             'type_kit' => $request->type_kit,
             'date_demande' => now(),
@@ -88,7 +99,9 @@ class KitController extends \Illuminate\Routing\Controller
         return redirect()->route('menage.dashboard')->with('success', 'Demande de kit enregistrée ! Vous recevrez votre kit sous 48h.');
     }
 
-    // Méthode pour générer un QR code en base64
+    /**
+     * Générer un QR code en base64
+     */
     private function genererQRCodeBase64($data)
     {
         $size = '200x200';
@@ -97,16 +110,20 @@ class KitController extends \Illuminate\Routing\Controller
 
         $qrImage = @file_get_contents($qrUrl);
         if ($qrImage === false) {
-            // Fallback : générer un QR code avec une autre API
             return "data:image/png;base64," . base64_encode($data);
         }
 
         return 'data:image/png;base64,' . base64_encode($qrImage);
     }
 
-    // Activer le kit (pour le collecteur) - utilisation de la méthode du modèle
+    /**
+     * Activer le kit (pour le collecteur) - via API JSON
+     */
     public function activerKit(Request $request)
     {
+        // Le middleware collecteur filtre déjà, donc pas besoin de re-vérifier
+        // $this->authorize('activer-kit');
+
         try {
             // Validation
             $request->validate([
@@ -147,7 +164,7 @@ class KitController extends \Illuminate\Routing\Controller
             $user->save();
 
             // Notification au ménage
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $user->id,
                 'titre' => '✅ Votre kit est activé !',
                 'message' => 'Votre kit de tri a été activé. Profitez de 15 jours d\'essai gratuit.',
@@ -157,7 +174,7 @@ class KitController extends \Illuminate\Routing\Controller
 
             // Notification au collecteur
             if (Auth::check()) {
-                \App\Models\Notification::create([
+                Notification::create([
                     'user_id' => Auth::id(),
                     'titre' => '🔧 Kit activé',
                     'message' => 'Vous avez activé le kit de ' . ($user->prenom ?? 'client') . ' ' . ($user->nom ?? ''),

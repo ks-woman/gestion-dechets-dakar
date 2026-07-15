@@ -94,6 +94,26 @@
                     <i class="fas fa-credit-card w-5 mr-3"></i> Mon abonnement
                 </a>
 
+                <a href="{{ route('notifications.index') }}"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
+    {{ request()->routeIs('notifications*') ? 'bg-emerald-700' : '' }}">
+                    <i class="fas fa-bell w-5 mr-3"></i> Notifications
+                    @php
+                        $nonLues = App\Models\Notification::where('user_id', auth()->id())
+                            ->where('est_lu', false)
+                            ->count();
+                    @endphp
+                    @if ($nonLues > 0)
+                        <span
+                            class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $nonLues }}</span>
+                    @endif
+                </a>
+
+                <a href="{{ route('reclamation.create') }}"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition">
+                    <i class="fas fa-envelope w-5 mr-3"></i> Contacter l'admin
+                </a>
+
             </nav>
 
             <!-- Pied de sidebar (collé en bas) -->

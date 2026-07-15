@@ -9,25 +9,41 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // ✅ AJOUT
 use App\Models\StockDechet;
 
 class CollecteController extends BaseController
 {
+    use AuthorizesRequests; // ✅ AJOUT
+
     public function __construct()
     {
         $this->middleware('auth');
     }
 
-    // Afficher le formulaire de demande de collecte
+    /**
+     * Afficher le formulaire de demande de collecte
+     */
     public function showDemanderCollecte()
     {
+        // Le middleware menage filtre déjà, pas besoin de re-vérifier
+        // if (Gate::denies('create', Collecte::class)) {
+        //     abort(403, 'Vous n\'êtes pas autorisé à demander une collecte.');
+        // }
+
         return view('collecte.demander');
     }
 
-    // Traiter la demande de collecte
+    /**
+     * Traiter la demande de collecte
+     */
     public function demanderCollecte(Request $request)
     {
         $user = Auth::user();
+
+        // Les vérifications sont déjà faites par le middleware et les méthodes ci-dessous
+        // $this->authorize('create', Collecte::class);
 
         if (!$user instanceof User) {
             abort(403, 'Utilisateur non authentifié.');
@@ -78,10 +94,14 @@ class CollecteController extends BaseController
         return redirect()->route('collectes')->with('success', 'Demande de collecte enregistrée ! Un collecteur vous contactera.');
     }
 
-    // Historique des collectes
+    /**
+     * Historique des collectes
+     */
     public function historique()
     {
         $user = Auth::user();
+
+        // Pas besoin de policy car on filtre par user_id
         $collectes = Collecte::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -89,7 +109,9 @@ class CollecteController extends BaseController
         return view('collecte.historique', compact('collectes'));
     }
 
-    // Dashboard ménage (UNE SEULE FOIS)
+    /**
+     * Dashboard ménage
+     */
     public function dashboard()
     {
         $user = Auth::user();
@@ -110,7 +132,9 @@ class CollecteController extends BaseController
         return view('menage.dashboard', compact('user', 'collectes', 'totalCollectes', 'prochaineCollecte'));
     }
 
-    // Statistiques
+    /**
+     * Statistiques
+     */
     public function statistiques()
     {
         $user = Auth::user();
@@ -155,9 +179,19 @@ class CollecteController extends BaseController
         ));
     }
 
+    /**
+     * Enregistrer une collecte (réservé aux collecteurs)
+     * Cette méthode est appelée par le CollecteurController via une route distincte
+     */
     public function enregistrerCollecte(Request $request)
     {
         $collecteur = Auth::user();
+
+        // Vérification manuelle car le middleware collecteur n'est pas appliqué à cette route
+        if (!$collecteur instanceof User || $collecteur->role !== 'collecteur') {
+            abort(403, 'Seul un collecteur peut enregistrer une collecte.');
+        }
+
         $client = User::findOrFail($request->user_id);
 
         // Vérifier si une collecte a déjà été faite aujourd'hui pour ce client
@@ -181,9 +215,9 @@ class CollecteController extends BaseController
         }
 
         // Calcul des poids et points
-        $poidsRecyclable = $request->plastiques_metaux + $request->papiers_cartons;
-        $poidsOrganique = $request->organiques;
-        $poidsResiduel = $request->autres;
+        $poidsRecyclable = ($request->plastiques_metaux ?? 0) + ($request->papiers_cartons ?? 0);
+        $poidsOrganique = $request->organiques ?? 0;
+        $poidsResiduel = $request->autres ?? 0;
         $points = ($poidsRecyclable * 1) + ($poidsOrganique * 0.5);
 
         // Mettre à jour la collecte existante
@@ -196,9 +230,9 @@ class CollecteController extends BaseController
             'collecteur_id' => $collecteur->id,
         ]);
 
-        // ============================================================
-        //  AJOUT : Incrémenter les stocks de déchets
-        // ============================================================
+        // Incrémenter les stocks de déchets
+        // Note : cette partie utilise un système de stock par type, qui peut être amélioré
+        // avec les catégories dynamiques comme dans CollecteurController
         StockDechet::incrementer('recyclable', $poidsRecyclable);
         StockDechet::incrementer('organique', $poidsOrganique);
         StockDechet::incrementer('residuel', $poidsResiduel);
@@ -209,7 +243,7 @@ class CollecteController extends BaseController
         // Notification au client
         Notification::create([
             'user_id' => $client->id,
-            'titre' => ' Collecte effectuée',
+            'titre' => '♻️ Collecte effectuée',
             'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)$points . " points.",
             'type' => 'collecte',
             'est_lu' => false

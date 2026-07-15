@@ -58,6 +58,22 @@
                     {{ request()->routeIs('partenaire.statistiques') ? 'bg-emerald-700' : '' }}">
                     <i class="fas fa-chart-bar w-5 mr-3"></i> Statistiques
                 </a>
+
+
+                <a href="{{ route('notifications.index') }}"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
+    {{ request()->routeIs('notifications*') ? 'bg-emerald-700' : '' }}">
+                    <i class="fas fa-bell w-5 mr-3"></i> Notifications
+                    @php
+                        $nonLues = App\Models\Notification::where('user_id', auth()->id())
+                            ->where('est_lu', false)
+                            ->count();
+                    @endphp
+                    @if ($nonLues > 0)
+                        <span
+                            class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $nonLues }}</span>
+                    @endif
+                </a>
             </nav>
 
             <div class="p-4 border-t border-emerald-700 mt-auto flex-shrink-0">

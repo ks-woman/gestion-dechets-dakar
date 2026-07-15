@@ -119,5 +119,49 @@
                 </div>
             @endif
         </div>
+
+        <!-- Notifications -->
+        <div class="bg-white rounded-xl shadow-soft p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-bell text-emerald-500"></i> Notifications
+                    @if (isset($nonLues) && $nonLues > 0)
+                        <span class="bg-red-500 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {{ $nonLues }} non lue(s)
+                        </span>
+                    @endif
+                </h2>
+                <a href="{{ route('notifications.index') }}"
+                    class="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+                    Voir toutes →
+                </a>
+            </div>
+            @if (isset($notifications) && $notifications->count() > 0)
+                <div class="space-y-2">
+                    @foreach ($notifications->take(5) as $notification)
+                        <a href="{{ $notification->lien ?? route('notifications.index') }}"
+                            class="block hover:bg-gray-100 transition rounded-lg">
+                            <div
+                                class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg {{ $notification->est_lu ? '' : 'border-l-4 border-emerald-500' }}">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">{{ $notification->titre }}</p>
+                                    <p class="text-xs text-gray-500">{{ $notification->message }}</p>
+                                    <p class="text-xs text-gray-400">{{ $notification->created_at->diffForHumans() }}</p>
+                                </div>
+                                @if (!$notification->est_lu)
+                                    <span
+                                        class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full">Nouveau</span>
+                                @endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-4 text-gray-500">
+                    <p>Aucune notification</p>
+                </div>
+            @endif
+        </div>
+
     </div>
 @endsection

@@ -10,14 +10,18 @@ use App\Models\CategorieDechet;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use App\Models\Recompense;
 use App\Models\PrimeCollecteur;
 use App\Models\Anomalie;
 use App\Models\Commande;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CollecteurController extends BaseController
 {
+    use AuthorizesRequests;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -58,7 +62,7 @@ class CollecteurController extends BaseController
             ->orderBy('date_collecte', 'asc')
             ->get();
 
-        // 🆕 Commandes à livrer par ce collecteur
+        // Commandes à livrer par ce collecteur
         $commandesALivrer = Commande::where('collecteur_id', $collecteur->id)
             ->where('statut', 'affectee')
             ->with(['partenaire', 'categorie'])
@@ -71,7 +75,7 @@ class CollecteurController extends BaseController
             'collectesAujourdhui',
             'collectesMois',
             'collectes',
-            'commandesALivrer' // ajouté
+            'commandesALivrer'
         ));
     }
 
@@ -98,8 +102,14 @@ class CollecteurController extends BaseController
         return redirect()->back()->with('error', 'Cette fonctionnalité n\'est pas encore implémentée.');
     }
 
+    /**
+     * Voir la tournée du jour
+     */
     public function tournee()
     {
+        //  Vérification : seul un collecteur peut voir sa tournée
+        $this->authorize('voir-tournee');
+
         $collecteur = Auth::user()->collecteur;
         $zones = $collecteur->zones;
         $quartiers = [];
@@ -177,15 +187,12 @@ class CollecteurController extends BaseController
             ])
         ]);
 
-        // ============================================================
-        // 🆕 INCÉMENTER LES STOCKS PAR CATÉGORIE
-        // ============================================================
+        // Incrémenter les stocks par catégorie
         $categories = CategorieDechet::where('est_actif', true)->get();
 
         foreach ($categories as $categorie) {
             $poids = 0;
 
-            // Correspondance entre les champs du formulaire et les catégories
             switch ($categorie->nom) {
                 case 'Plastique':
                     $poids = $poidsPlastiquesMetaux;
@@ -247,12 +254,18 @@ class CollecteurController extends BaseController
         return redirect()->route('collecteur.scanner');
     }
 
+    /**
+     * Activer un kit par scan (redirection)
+     */
     public function activerKitParScan($code)
     {
+        //  Vérification : seul un collecteur peut activer un kit
+        $this->authorize('activer-kit');
+
         $kit = KitTri::where('code_unique', $code)->first();
 
         if (!$kit) {
-            return redirect()->route('collecteur.dashboard')->with('error', '❌ Code de kit invalide.');
+            return redirect()->route('collecteur.dashboard')->with('error', ' Code de kit invalide.');
         }
 
         if ($kit->statut === 'actif') {
@@ -300,8 +313,14 @@ class CollecteurController extends BaseController
         return view('collecteur.scanner');
     }
 
+    /**
+     * Activer un kit (via API JSON)
+     */
     public function activerKit(Request $request)
     {
+        //  Vérification : seul un collecteur peut activer un kit
+        $this->authorize('activer-kit');
+
         $request->validate([
             'code_kit' => 'required|string'
         ]);
@@ -539,10 +558,6 @@ class CollecteurController extends BaseController
             'type' => 'commande',
             'est_lu' => false,
         ]);
-
-        // Notification à l'admin (optionnel)
-        // $admins = User::where('role', 'admin')->get();
-        // foreach ($admins as $admin) { ... }
 
         return redirect()->route('collecteur.dashboard')->with('success', ' Livraison confirmée !');
     }

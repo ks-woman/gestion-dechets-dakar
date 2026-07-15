@@ -117,10 +117,10 @@
                         var collecte = client.collectes ? client.collectes.find(c => c.statut ===
                             'planifiee') : null;
                         var heures = collecte ? new Date(collecte.date_collecte).toLocaleTimeString(
-                        'fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }) : 'Non défini';
+                            'fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) : 'Non défini';
 
                         marker.bindPopup(`
                         <div style="font-size:14px;">

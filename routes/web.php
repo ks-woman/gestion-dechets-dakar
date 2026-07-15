@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\RecompenseController;
 use App\Http\Controllers\Admin\ReclamationController;
 use App\Http\Controllers\Admin\CategorieDechetController;
 use App\Http\Controllers\Admin\StockDechetController;
+use App\Http\Controllers\Admin\AdminAbonnementController;
+use App\Http\Controllers\UserAbonnementController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 // =============================================
@@ -105,10 +109,6 @@ Route::middleware(['auth', 'collecteur'])->prefix('collecteur')->name('collecteu
     Route::get('/primes', [CollecteurController::class, 'primes'])->name('primes');
 
     Route::put('/commande/{id}/livrer', [CollecteurController::class, 'livrerCommande'])->name('commande.livrer');
-
-    // Route pour que le collecteur confirme la livraison d'une commande
-    Route::put('/commande/{id}/livrer', [CollecteurController::class, 'livrerCommande'])->name('commande.livrer');
-    Route::post('/commandes/{id}/affecter', [AdminController::class, 'affecterCollecteur'])->name('admin.commandes.affecter');
 });
 
 // =============================================
@@ -126,12 +126,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/utilisateurs/{id}', [AdminController::class, 'updateUtilisateur'])->name('utilisateurs.update');
     Route::delete('/utilisateurs/{id}', [AdminController::class, 'destroyUtilisateur'])->name('utilisateurs.destroy');
 
-    // Autres pages admin
+    // Collectes, statistiques, kits
     Route::get('/collectes', [AdminController::class, 'collectes'])->name('collectes');
     Route::get('/statistiques', [AdminController::class, 'statistiques'])->name('statistiques');
     Route::get('/kits', [AdminController::class, 'kits'])->name('kits');
 
-    //  GESTION DES COLLECTEURS (une seule fois !)
+    // Gestion des collecteurs
     Route::get('/collecteurs', [AdminController::class, 'collecteursDisponibilite'])->name('collecteurs');
 
     // Zones de collecte
@@ -145,45 +145,67 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reclamations/{id}', [ReclamationController::class, 'show'])->name('reclamations.show');
     Route::put('/reclamations/{id}', [ReclamationController::class, 'update'])->name('reclamations.update');
 
-    // Gestion des catégories de déchets
+    // Catégories de déchets
     Route::resource('categories', CategorieDechetController::class)->except(['show']);
 
-    // =============================================
-    // GESTION DES ABONNEMENTS (ADMIN)
-    // =============================================
-    Route::get('/abonnements', [App\Http\Controllers\Admin\AbonnementController::class, 'index'])->name('abonnements.index');
-    Route::get('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'show'])->name('abonnements.show');
-    Route::put('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'update'])->name('abonnements.update');
-    Route::post('/abonnements/{id}/activer', [App\Http\Controllers\Admin\AbonnementController::class, 'activer'])->name('abonnements.activer');
-
-    // =============================================
-    //  GESTION DES COMMANDES
-    // =============================================
-    Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');
-    Route::get('/commandes/{id}', [CommandeController::class, 'show'])->name('commandes.show');
-    Route::put('/commandes/{id}', [CommandeController::class, 'update'])->name('commandes.update');
-
-    // Routes pour l'affectation des collecteurs aux commandes
-    Route::get('/commandes/{id}/infos', [AdminController::class, 'commandeInfos'])->name('commandes.infos');
-    Route::get('/commandes/{id}/collecteurs-disponibles', [AdminController::class, 'collecteursDisponibles'])->name('commandes.collecteurs');
-    Route::post('/commandes/{id}/affecter', [AdminController::class, 'affecterCollecteur'])->name('commandes.affecter');
-
-    // =============================================
-    //  GESTION DES STOCKS DE DÉCHETS
-    // =============================================
+    // Stocks de déchets
     Route::get('/stocks', [StockDechetController::class, 'index'])->name('stocks.index');
     Route::get('/stocks/{id}/edit', [StockDechetController::class, 'edit'])->name('stocks.edit');
     Route::put('/stocks/{id}', [StockDechetController::class, 'update'])->name('stocks.update');
+
+    // Commandes
+    Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');
+    Route::get('/commandes/{id}', [CommandeController::class, 'show'])->name('commandes.show');
+    Route::put('/commandes/{id}', [CommandeController::class, 'update'])->name('commandes.update');
+    Route::post('/commandes/{id}/affecter', [AdminController::class, 'affecterCollecteur'])->name('commandes.affecter');
+
+    Route::get('/abonnements', [App\Http\Controllers\Admin\AbonnementController::class, 'index'])->name('abonnements.index');
+    Route::get('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'show'])->name('abonnements.show');
+    Route::post('/abonnements/{id}/activer', [App\Http\Controllers\Admin\AbonnementController::class, 'activer'])->name('abonnements.activer');
+    Route::post('/abonnements/{id}/resilier', [App\Http\Controllers\Admin\AbonnementController::class, 'resilier'])->name('abonnements.resilier');
+    Route::put('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'update'])->name('abonnements.update');
+    Route::post('/abonnements/{id}/prolonger', [App\Http\Controllers\Admin\AbonnementController::class, 'prolonger'])->name('abonnements.prolonger');
+    Route::get('/abonnements/{id}/paiements', [App\Http\Controllers\Admin\AbonnementController::class, 'paiements'])->name('abonnements.paiements');
 });
 
 // =============================================
-// ROUTES ABONNEMENT
+// ROUTES ABONNEMENT (utilisateur)
 // =============================================
 Route::middleware(['auth'])->prefix('abonnement')->name('abonnement.')->group(function () {
-    Route::get('/', [App\Http\Controllers\AbonnementController::class, 'index'])->name('index');
-    Route::post('/souscrire', [App\Http\Controllers\AbonnementController::class, 'souscrire'])->name('souscrire');
-    Route::post('/annuler', [App\Http\Controllers\AbonnementController::class, 'annuler'])->name('annuler');
-    Route::get('/historique', [App\Http\Controllers\AbonnementController::class, 'historique'])->name('historique');
+    Route::get('/', [UserAbonnementController::class, 'index'])->name('index');
+    Route::post('/souscrire', [UserAbonnementController::class, 'souscrire'])->name('souscrire');
+    Route::post('/annuler', [UserAbonnementController::class, 'annuler'])->name('annuler');
+    Route::get('/historique', [UserAbonnementController::class, 'historique'])->name('historique');
+});
+
+// =============================================
+// ROUTES NOTIFICATIONS
+// =============================================
+Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+    Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
+});
+
+// =============================================
+// ROUTES DE PAIEMENT (utilisateur)
+// =============================================
+Route::middleware(['auth'])->group(function () {
+    Route::post('/payment/souscrire', [PaymentController::class, 'souscrire'])->name('payment.souscrire');
+    Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('payment.callback');
+    Route::post('/payment/webhook/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
+    Route::get('/payment/historique', [PaymentController::class, 'historique'])->name('payment.historique');
+});
+
+
+// =============================================
+// ROUTES RÉCLAMATIONS (utilisateur)
+// =============================================
+Route::middleware(['auth'])->prefix('reclamation')->name('reclamation.')->group(function () {
+    Route::get('/create', [App\Http\Controllers\ReclamationController::class, 'create'])->name('create');
+    Route::post('/store', [App\Http\Controllers\ReclamationController::class, 'store'])->name('store');
+    Route::get('/merci', [App\Http\Controllers\ReclamationController::class, 'merci'])->name('merci');
 });
 
 // =============================================
@@ -205,6 +227,6 @@ Route::middleware(['auth', 'partenaire'])->prefix('partenaire')->name('partenair
     Route::get('/certificat/generer/{id}', [PartenaireController::class, 'genererCertificat'])->name('certificat.generer');
     Route::get('/certificat/{id}', [PartenaireController::class, 'showCertificat'])->name('certificat.show');
 
-    // Profil (besoins)
+    // Profil
     Route::put('/profil', [PartenaireController::class, 'updateProfil'])->name('profil.update');
 });

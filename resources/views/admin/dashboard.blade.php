@@ -11,7 +11,7 @@
                     <h1 class="text-2xl font-bold">Bonjour {{ auth()->user()->prenom }} !</h1>
                     <p class="text-emerald-100 mt-1">Tableau de bord administrateur</p>
                 </div>
-                <div class="text-5xl">⚡</div>
+                <div class="text-5xl"></div>
             </div>
         </div>
 
@@ -62,7 +62,7 @@
                 </div>
             </div>
 
-            <!-- 🆕 Carte Abonnements -->
+            <!--  Carte Abonnements -->
             <div class="card">
                 <div class="flex justify-between items-center">
                     <div>
