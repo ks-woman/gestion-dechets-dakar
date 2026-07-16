@@ -7,6 +7,7 @@ use App\Models\Commande;
 use App\Models\CertificatValorisation;
 use App\Models\Notification;
 use App\Models\Partenaire;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
@@ -27,19 +28,8 @@ class PartenaireController extends BaseController
     private function checkPartenaire()
     {
         $user = Auth::user();
-        $isPartenaire = false;
 
-        if ($user) {
-            if (method_exists($user, 'isPartenaire')) {
-                $isPartenaire = $user->isPartenaire();
-            } else {
-                // Fallback: check a role attribute or column named 'role' or 'type'
-                $role = $user->role ?? $user->type ?? null;
-                $isPartenaire = ($role === 'partenaire');
-            }
-        }
-
-        if (!$isPartenaire) {
+        if (!$user || !$user->isPartenaire()) {
             abort(403, 'Accès réservé aux partenaires.');
         }
     }
@@ -51,30 +41,40 @@ class PartenaireController extends BaseController
     {
         $this->checkPartenaire();
 
-        $totalCollectes = Collecte::where('statut', 'valorisee')->count();
-        $totalPoids = Collecte::where('statut', 'valorisee')->sum('poids_recyclable') +
-            Collecte::where('statut', 'valorisee')->sum('poids_organique') +
-            Collecte::where('statut', 'valorisee')->sum('poids_residuel');
-        $totalPoints = Collecte::where('statut', 'valorisee')->sum('points_obtenus');
-        $enAttente = Collecte::where('statut', 'realisee')->count();
+        // 📌 Total des commandes passées par ce partenaire
+        $totalCommandes = Commande::where('partenaire_id', Auth::id())->count();
 
+        // 📌 Quantité totale commandée par ce partenaire
+        $quantiteTotale = Commande::where('partenaire_id', Auth::id())->sum('quantite');
+
+        // 📌 Offres disponibles
+        $offresDisponibles = StockDechet::where('quantite', '>', 0)->count();
+
+        // 📌 Dernières commandes
         $dernieresCommandes = Commande::where('partenaire_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        $offresDisponibles = StockDechet::where('quantite', '>', 0)->count();
+        // 📌 Notifications
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        $nonLues = Notification::where('user_id', Auth::id())
+            ->where('est_lu', false)
+            ->count();
 
         return view('partenaire.dashboard', compact(
-            'totalCollectes',
-            'totalPoids',
-            'totalPoints',
-            'enAttente',
+            'totalCommandes',
+            'quantiteTotale',
+            'offresDisponibles',
             'dernieresCommandes',
-            'offresDisponibles'
+            'notifications',
+            'nonLues'
         ));
     }
-
     // =============================================
     // LISTE DES DÉCHETS REÇUS
     // =============================================
@@ -147,7 +147,7 @@ class PartenaireController extends BaseController
         $this->checkPartenaire();
 
         $commandes = Commande::where('partenaire_id', Auth::id())
-            ->with('collecte.user')
+            ->with(['collecte.user', 'categorie', 'certificat'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -156,6 +156,7 @@ class PartenaireController extends BaseController
             'en_attente' => Commande::where('partenaire_id', Auth::id())->where('statut', 'en_attente')->count(),
             'validees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'validee')->count(),
             'livrees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'livree')->count(),
+            'recues' => Commande::where('partenaire_id', Auth::id())->where('statut', 'recue')->count(),
             'annulees' => Commande::where('partenaire_id', Auth::id())->where('statut', 'annulee')->count(),
         ];
 
@@ -175,9 +176,9 @@ class PartenaireController extends BaseController
             abort(403, 'Vous n\'êtes pas autorisé à générer un certificat pour cette commande.');
         }
 
-        if ($commande->statut !== 'livree') {
+        if ($commande->statut !== 'livree' && $commande->statut !== 'recue') {
             return redirect()->route('partenaire.historique')
-                ->with('error', 'Le certificat ne peut être généré que pour une commande livrée.');
+                ->with('error', 'Le certificat ne peut être généré que pour une commande livrée ou réceptionnée.');
         }
 
         $certificatExistant = CertificatValorisation::where('commande_id', $commandeId)->first();
@@ -202,7 +203,7 @@ class PartenaireController extends BaseController
         if ($commande->collecte->collecteur) {
             Notification::create([
                 'user_id' => $commande->collecte->collecteur->user_id,
-                'titre' => '📄 Certificat généré',
+                'titre' => ' Certificat généré',
                 'message' => 'Un certificat de valorisation a été émis pour la collecte #' . $commande->collecte_id,
                 'type' => 'certificat',
                 'est_lu' => false,
@@ -262,7 +263,6 @@ class PartenaireController extends BaseController
     {
         $this->checkPartenaire();
 
-        // ✅ Récupérer uniquement les stocks avec quantité > 0
         $stocks = StockDechet::with('categorie')
             ->whereHas('categorie', function ($query) {
                 $query->where('est_actif', true);
@@ -348,5 +348,89 @@ class PartenaireController extends BaseController
             'moisCommandes',
             'nbCommandesParMois'
         ));
+    }
+
+    // =============================================
+    // CONFIRMER LA RÉCEPTION D'UNE COMMANDE
+    // =============================================
+    public function confirmerReception($id)
+    {
+        $this->checkPartenaire();
+
+        $commande = Commande::with(['partenaire', 'collecte', 'categorie'])->findOrFail($id);
+
+        // Vérifier que la commande appartient bien au partenaire
+        if ($commande->partenaire_id != Auth::id()) {
+            abort(403, 'Cette commande ne vous appartient pas.');
+        }
+
+        // Vérifier que la commande est en statut "livree"
+        if ($commande->statut !== 'livree') {
+            return redirect()->back()->with('error', 'Seule une commande livrée peut être réceptionnée.');
+        }
+
+        // Mettre à jour le statut
+        $commande->statut = 'recue';
+        $commande->date_reception = now();
+        $commande->save();
+
+        // Mettre à jour la collecte associée si elle existe
+        if ($commande->collecte) {
+            $commande->collecte->update([
+                'statut' => 'valorisee',
+                'partenaire_id' => Auth::id(),
+                'date_reception' => now(),
+            ]);
+        }
+
+        // Générer automatiquement le certificat de valorisation
+        $certificat = $this->genererCertificatReception($commande);
+
+        // Notifier le collecteur
+        if ($commande->collecteur_id) {
+            $collecteur = User::find($commande->collecteur_id);
+            if ($collecteur) {
+                Notification::create([
+                    'user_id' => $collecteur->id,
+                    'titre' => ' Réception confirmée',
+                    'message' => 'Le partenaire ' . Auth::user()->nom . ' a confirmé la réception de la commande #' . $commande->id,
+                    'type' => 'commande',
+                    'est_lu' => false,
+                ]);
+            }
+        }
+
+        // Notifier l'admin
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'titre' => ' Réception validée',
+                'message' => 'Le partenaire ' . Auth::user()->nom . ' a réceptionné la commande #' . $commande->id,
+                'type' => 'commande',
+                'est_lu' => false,
+            ]);
+        }
+
+        return redirect()->route('partenaire.historique')
+            ->with('success', ' Réception confirmée ! Le certificat de valorisation a été généré automatiquement.');
+    }
+
+    /**
+     * Générer le certificat de valorisation (appelé automatiquement)
+     */
+    private function genererCertificatReception($commande)
+    {
+        $numeroCertificat = 'CERT-' . strtoupper(uniqid());
+
+        return CertificatValorisation::create([
+            'partenaire_id' => Auth::id(),
+            'commande_id' => $commande->id,
+            'numero_certificat' => $numeroCertificat,
+            'date_emission' => now(),
+            'quantite_valorisee' => $commande->quantite,
+            'type_valorisation' => $commande->categorie->nom ?? 'Recyclage',
+            'description' => 'Valorisation de déchets ' . ($commande->categorie->nom ?? '') . ' provenant de la commande #' . $commande->id,
+        ]);
     }
 }

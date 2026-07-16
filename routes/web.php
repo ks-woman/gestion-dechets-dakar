@@ -233,7 +233,7 @@ Route::middleware(['auth', 'partenaire'])->prefix('partenaire')->name('partenair
     Route::get('/commander/{id}', [PartenaireController::class, 'showCommandeForm'])->name('commander.form');
     Route::post('/commander', [PartenaireController::class, 'storeCommande'])->name('commander.store');
     Route::get('/historique', [PartenaireController::class, 'historique'])->name('historique');
-
+    Route::post('/commande/{id}/confirmer-reception', [PartenaireController::class, 'confirmerReception'])->name('commande.confirmer-reception');
     // Certificats
     Route::get('/certificat/generer/{id}', [PartenaireController::class, 'genererCertificat'])->name('certificat.generer');
     Route::get('/certificat/{id}', [PartenaireController::class, 'showCertificat'])->name('certificat.show');

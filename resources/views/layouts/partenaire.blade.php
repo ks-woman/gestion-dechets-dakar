@@ -48,15 +48,27 @@
                     <i class="fas fa-boxes w-5 mr-3"></i> Offres
                 </a>
 
-                <a href="{{ route('partenaire.historique') }}"
-                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    {{ request()->routeIs('partenaire.historique') ? 'bg-emerald-700' : '' }}">
-                    <i class="fas fa-history w-5 mr-3"></i> Historique
-                </a>
+
                 <a href="{{ route('partenaire.statistiques') }}"
                     class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
                     {{ request()->routeIs('partenaire.statistiques') ? 'bg-emerald-700' : '' }}">
                     <i class="fas fa-chart-bar w-5 mr-3"></i> Statistiques
+                </a>
+
+                <a href="{{ route('partenaire.historique') }}"
+                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition relative">
+                    <i class="fas fa-history w-5 mr-3"></i> Historique
+                    @php
+                        $aConfirmer = \App\Models\Commande::where('partenaire_id', auth()->id())
+                            ->where('statut', 'livree')
+                            ->count();
+                    @endphp
+                    @if ($aConfirmer > 0)
+                        <span
+                            class="absolute right-4 top-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {{ $aConfirmer }}
+                        </span>
+                    @endif
                 </a>
 
 

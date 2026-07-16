@@ -11,21 +11,24 @@ class Commande extends Model
 
     protected $fillable = [
         'partenaire_id',
+        'collecte_id',
         'categorie_id',
+        'collecteur_id',
         'quantite',
         'prix_unitaire',
         'montant_total',
         'statut',
         'date_livraison',
-        'collecteur_id',
-        'date_affectation'
+        'date_reception',
+        'date_affectation',
     ];
 
     protected $casts = [
         'date_livraison' => 'date',
-        'date_affectation' => 'datetime',
+        'date_reception' => 'date',
     ];
 
+    // Relations
     public function partenaire()
     {
         return $this->belongsTo(User::class, 'partenaire_id');
@@ -36,6 +39,11 @@ class Commande extends Model
         return $this->belongsTo(Collecte::class);
     }
 
+    public function categorie()
+    {
+        return $this->belongsTo(CategorieDechet::class);
+    }
+
     public function certificat()
     {
         return $this->hasOne(CertificatValorisation::class);
@@ -44,10 +52,5 @@ class Commande extends Model
     public function collecteur()
     {
         return $this->belongsTo(Collecteur::class);
-    }
-
-    public function categorie()
-    {
-        return $this->belongsTo(CategorieDechet::class);
     }
 }
