@@ -25,7 +25,7 @@ class CollecteurController extends BaseController
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('collecteur');
+        $this->middleware('collecteur'); // <- ce middleware sera désormais tolérant avec les admins
     }
 
     public function dashboard()
@@ -62,7 +62,6 @@ class CollecteurController extends BaseController
             ->orderBy('date_collecte', 'asc')
             ->get();
 
-        // Commandes à livrer par ce collecteur
         $commandesALivrer = Commande::where('collecteur_id', $collecteur->id)
             ->where('statut', 'affectee')
             ->with(['partenaire', 'categorie'])
@@ -103,13 +102,10 @@ class CollecteurController extends BaseController
     }
 
     /**
-     * Voir la tournée du jour
+     * Voir la tournée du jour (protégé par middleware collecteur)
      */
     public function tournee()
     {
-        //  Vérification : seul un collecteur peut voir sa tournée
-        $this->authorize('voir-tournee');
-
         $collecteur = Auth::user()->collecteur;
         $zones = $collecteur->zones;
         $quartiers = [];
@@ -187,7 +183,6 @@ class CollecteurController extends BaseController
             ])
         ]);
 
-        // Incrémenter les stocks par catégorie
         $categories = CategorieDechet::where('est_actif', true)->get();
 
         foreach ($categories as $categorie) {
@@ -216,12 +211,11 @@ class CollecteurController extends BaseController
             }
         }
 
-        // Ajouter les points au client
         $client->ajouterPoints((int)round($points));
 
         Notification::create([
             'user_id' => $client->id,
-            'titre' => ' Collecte effectuée',
+            'titre' => 'Collecte effectuée',
             'message' => "Votre collecte a été réalisée. Vous avez gagné " . (int)round($points) . " points.",
             'type' => 'collecte',
             'est_lu' => false
@@ -259,9 +253,6 @@ class CollecteurController extends BaseController
      */
     public function activerKitParScan($code)
     {
-        //  Vérification : seul un collecteur peut activer un kit
-        $this->authorize('activer-kit');
-
         $kit = KitTri::where('code_unique', $code)->first();
 
         if (!$kit) {
@@ -318,9 +309,6 @@ class CollecteurController extends BaseController
      */
     public function activerKit(Request $request)
     {
-        //  Vérification : seul un collecteur peut activer un kit
-        $this->authorize('activer-kit');
-
         $request->validate([
             'code_kit' => 'required|string'
         ]);
@@ -535,22 +523,18 @@ class CollecteurController extends BaseController
     {
         $commande = Commande::with('partenaire')->findOrFail($id);
 
-        // Vérifier que le collecteur est bien celui affecté
         if ($commande->collecteur_id != Auth::user()->collecteur->id) {
             abort(403, 'Vous n\'êtes pas autorisé à livrer cette commande.');
         }
 
-        // Vérifier que la commande est bien en statut "affectee"
         if ($commande->statut !== 'affectee') {
             return redirect()->back()->with('error', 'Cette commande n\'est pas en cours de livraison.');
         }
 
-        // Mettre à jour la commande
         $commande->statut = 'livree';
         $commande->date_livraison = now();
         $commande->save();
 
-        // Notification au partenaire
         Notification::create([
             'user_id' => $commande->partenaire_id,
             'titre' => ' Commande livrée',

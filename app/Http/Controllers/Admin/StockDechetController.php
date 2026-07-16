@@ -10,8 +10,15 @@ class StockDechetController extends Controller
 {
     public function index()
     {
-        //  Charger la relation 'categorie'
-        $stocks = StockDechet::with('categorie')->get();
+        // Récupérer les stocks avec quantité > 0 ET catégorie active
+        $stocks = StockDechet::with('categorie')
+            ->whereHas('categorie', function ($query) {
+                $query->where('est_actif', true);
+            })
+            ->where('quantite', '>', 0)
+            ->orderBy('quantite', 'desc')
+            ->get();
+
         return view('admin.stocks.index', compact('stocks'));
     }
 

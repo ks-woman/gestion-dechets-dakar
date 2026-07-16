@@ -5,6 +5,15 @@
 @section('content')
     <div class="w-full max-w-4xl mx-auto px-4">
         <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8">
+
+            <!-- Bouton Retour -->
+            <div class="mb-4">
+                <a href="{{ route('home') }}"
+                    class="inline-flex items-center text-emerald-600 hover:text-emerald-700 transition font-medium text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i> Retour à l'accueil
+                </a>
+            </div>
+
             <!-- En-tête -->
             <div class="text-center mb-6">
                 <div class="text-4xl mb-2"></div>

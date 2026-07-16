@@ -76,6 +76,7 @@
             transition: all 0.15s;
             font-size: 0.9rem;
             text-decoration: none;
+            position: relative;
         }
 
         .sidebar-nav a i {
@@ -93,6 +94,20 @@
         .sidebar-nav a.active {
             background: #10b981;
             color: white;
+        }
+
+        .badge-notif {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ef4444;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 0.1rem 0.5rem;
+            border-radius: 9999px;
+            line-height: 1.4;
         }
 
         .sidebar-footer {
@@ -156,6 +171,12 @@
             color: white;
             font-size: 1.5rem;
             cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+        }
+
+        .hamburger:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .overlay {
@@ -196,6 +217,39 @@
             .main-body {
                 padding: 1rem;
             }
+
+            .sidebar-nav a {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        /* ---------- ALERTES ---------- */
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3b82f6;
         }
     </style>
 </head>
@@ -239,6 +293,11 @@
                         ['route' => 'admin.collectes', 'icon' => 'fa-truck', 'label' => 'Collectes'],
                         ['route' => 'admin.kits', 'icon' => 'fa-box', 'label' => 'Kits commandés'],
                         ['route' => 'admin.statistiques', 'icon' => 'fa-chart-line', 'label' => 'Statistiques'],
+                        [
+                            'route' => 'admin.statistiques.collecteurs',
+                            'icon' => 'fa-chart-bar',
+                            'label' => 'Stats collecteurs',
+                        ],
                         ['route' => 'admin.recompenses.index', 'icon' => 'fa-gift', 'label' => 'Récompenses'],
                         ['route' => 'admin.zones.index', 'icon' => 'fa-map-marked-alt', 'label' => 'Zones'],
                         [
@@ -252,6 +311,7 @@
                         ['route' => 'admin.abonnements.index', 'icon' => 'fa-credit-card', 'label' => 'Abonnements'],
                     ];
                 ?>
+
                 <?php $__currentLoopData = $menu; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <a href="<?php echo e(route($item['route'])); ?>"
                         class="<?php echo e(request()->routeIs($item['route'] . '*') ? 'active' : ''); ?>">
@@ -261,39 +321,20 @@
                     </a>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-                <!--  LIEN NOTIFICATIONS -->
+                <!-- Notifications (avec badge) -->
                 <a href="<?php echo e(route('notifications.index')); ?>"
-                    class="flex items-center px-4 py-2.5 text-white hover:bg-emerald-700 rounded-lg transition
-                    <?php echo e(request()->routeIs('notifications*') ? 'bg-emerald-700' : ''); ?>">
-                    <i class="fas fa-bell w-5 mr-3"></i> Notifications
+                    class="<?php echo e(request()->routeIs('notifications*') ? 'active' : ''); ?>">
+                    <i class="fas fa-bell"></i>
+                    Notifications
                     <?php
-                        $nonLues = App\Models\Notification::where('user_id', auth()->id())
+                        $nonLues = \App\Models\Notification::where('user_id', auth()->id())
                             ->where('est_lu', false)
                             ->count();
                     ?>
                     <?php if($nonLues > 0): ?>
-                        <span
-                            class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full"><?php echo e($nonLues); ?></span>
+                        <span class="badge-notif"><?php echo e($nonLues); ?></span>
                     <?php endif; ?>
                 </a>
-
-                <a href="<?php echo e(route('admin.reclamations.index')); ?>"
-                    class="flex items-center px-5 py-3 text-white hover:bg-emerald-700 transition relative">
-                    <i class="fas fa-exclamation-triangle w-5 mr-3"></i> Réclamations
-                    <?php
-                        $reclamationsNonLues = \App\Models\Reclamation::where('statut', 'ouverte')
-                            ->orWhere('statut', 'en_cours')
-                            ->count();
-                    ?>
-                    <?php if($reclamationsNonLues > 0): ?>
-                        <span
-                            class="absolute right-5 top-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                            <?php echo e($reclamationsNonLues); ?>
-
-                        </span>
-                    <?php endif; ?>
-                </a>
-
             </nav>
 
             <div class="sidebar-footer">
@@ -310,7 +351,7 @@
         <main class="main">
             <header class="main-header">
                 <div class="flex items-center gap-3">
-                    <button class="hamburger" onclick="toggleSidebar()">
+                    <button class="hamburger" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h2 class="text-lg font-semibold"><?php echo $__env->yieldContent('title', 'Administration'); ?></h2>
@@ -328,6 +369,9 @@
                 <?php if(session('error')): ?>
                     <div class="alert-danger"><?php echo e(session('error')); ?></div>
                 <?php endif; ?>
+                <?php if(session('info')): ?>
+                    <div class="alert-info"><?php echo e(session('info')); ?></div>
+                <?php endif; ?>
                 <?php echo $__env->yieldContent('content'); ?>
             </div>
         </main>
@@ -341,11 +385,21 @@
         function closeSidebar() {
             document.getElementById('app').classList.remove('sidebar-open');
         }
-        // Fermer la sidebar quand on clique sur un lien (mobile)
+
+        // Fermer la sidebar lors du clic sur un lien en mobile
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) closeSidebar();
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
             });
+        });
+
+        // Fermer la sidebar avec la touche Échap
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
         });
     </script>
 </body>

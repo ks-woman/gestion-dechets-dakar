@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\AdminAbonnementController;
 use App\Http\Controllers\UserAbonnementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\AboutController;
 use Illuminate\Support\Facades\Route;
 
 // =============================================
@@ -25,6 +27,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('home');
 })->name('home');
+
+
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/a-propos', [AboutController::class, 'index'])->name('about');
+
 
 // =============================================
 // INSCRIPTION
@@ -166,6 +174,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/abonnements/{id}', [App\Http\Controllers\Admin\AbonnementController::class, 'update'])->name('abonnements.update');
     Route::post('/abonnements/{id}/prolonger', [App\Http\Controllers\Admin\AbonnementController::class, 'prolonger'])->name('abonnements.prolonger');
     Route::get('/abonnements/{id}/paiements', [App\Http\Controllers\Admin\AbonnementController::class, 'paiements'])->name('abonnements.paiements');
+
+    Route::get('/statistiques-collecteurs', [AdminController::class, 'statistiquesCollecteurs'])->name('statistiques.collecteurs');
+    Route::get('/primes/collecteur/{id}', [AdminController::class, 'primesCollecteur'])->name('primes.collecteur');
 });
 
 // =============================================

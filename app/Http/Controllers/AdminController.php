@@ -8,6 +8,7 @@ use App\Models\KitTri;
 use App\Models\Menage;
 use App\Models\Entreprise;
 use App\Models\Collecteur;
+use App\Models\PrimeCollecteur;
 use App\Models\Partenaire;
 use App\Models\Commande;
 use App\Models\ZoneCollecte;
@@ -484,5 +485,158 @@ class AdminController extends BaseController
         ]);
 
         return redirect()->route('admin.commandes.index')->with('success', 'Collecteur affecté avec succès !');
+    }
+
+    /**
+     * Statistiques détaillées des collecteurs
+     */
+    public function statistiquesCollecteurs(Request $request)
+    {
+        $this->checkAdmin();
+
+        // Période par défaut : année en cours
+        $annee = $request->input('annee', now()->year);
+        $mois = $request->input('mois', null); // null = toute l'année
+        $collecteurId = $request->input('collecteur_id', null);
+
+        // Requête de base sur les collectes réalisées
+        $queryCollectes = Collecte::where('statut', 'realisee')
+            ->whereYear('date_collecte', $annee);
+
+        if ($mois) {
+            $queryCollectes->whereMonth('date_collecte', $mois);
+        }
+
+        if ($collecteurId) {
+            $queryCollectes->where('collecteur_id', $collecteurId);
+        }
+
+        // --- 1. KPIs globaux ---
+        $totalCollectes = $queryCollectes->count();
+        $totalPoids = $queryCollectes->sum('poids_recyclable')
+            + $queryCollectes->sum('poids_organique')
+            + $queryCollectes->sum('poids_residuel');
+        $totalPoints = $queryCollectes->sum('points_obtenus');
+
+        // Nombre de collecteurs actifs (ceux qui ont fait au moins une collecte sur la période)
+        $collecteursActifs = $queryCollectes->distinct('collecteur_id')->count('collecteur_id');
+
+        // --- 2. Données par collecteur (pour le tableau) ---
+        $collecteurs = Collecteur::with('user')
+            ->withCount(['collectes' => function ($q) use ($annee, $mois) {
+                $q->where('statut', 'realisee')
+                    ->whereYear('date_collecte', $annee);
+                if ($mois) $q->whereMonth('date_collecte', $mois);
+            }])
+            ->withSum(['collectes' => function ($q) use ($annee, $mois) {
+                $q->where('statut', 'realisee')
+                    ->whereYear('date_collecte', $annee);
+                if ($mois) $q->whereMonth('date_collecte', $mois);
+            }], 'poids_recyclable')
+            ->withSum(['collectes' => function ($q) use ($annee, $mois) {
+                $q->where('statut', 'realisee')
+                    ->whereYear('date_collecte', $annee);
+                if ($mois) $q->whereMonth('date_collecte', $mois);
+            }], 'poids_organique')
+            ->withSum(['collectes' => function ($q) use ($annee, $mois) {
+                $q->where('statut', 'realisee')
+                    ->whereYear('date_collecte', $annee);
+                if ($mois) $q->whereMonth('date_collecte', $mois);
+            }], 'poids_residuel')
+            ->withSum(['collectes' => function ($q) use ($annee, $mois) {
+                $q->where('statut', 'realisee')
+                    ->whereYear('date_collecte', $annee);
+                if ($mois) $q->whereMonth('date_collecte', $mois);
+            }], 'points_obtenus')
+            ->get();
+
+        // Calcul du total par collecteur (poids total = recyclable + organique + résiduel)
+        $collecteurs->each(function ($c) {
+            $c->poids_total = ($c->collectes_sum_poids_recyclable ?? 0)
+                + ($c->collectes_sum_poids_organique ?? 0)
+                + ($c->collectes_sum_poids_residuel ?? 0);
+        });
+
+        // Trier par poids total décroissant
+        $collecteurs = $collecteurs->sortByDesc('poids_total')->values();
+
+        // Top 5
+        $top5 = $collecteurs->take(5);
+
+        // --- 3. Graphique : Évolution mensuelle (pour tout ou pour un collecteur spécifique) ---
+        $queryEvolution = Collecte::where('statut', 'realisee')
+            ->whereYear('date_collecte', $annee);
+        if ($collecteurId) {
+            $queryEvolution->where('collecteur_id', $collecteurId);
+        }
+
+        $evolution = $queryEvolution
+            ->selectRaw('MONTH(date_collecte) as mois,
+                     SUM(poids_recyclable) as recyclable,
+                     SUM(poids_organique) as organique,
+                     SUM(poids_residuel) as residuel,
+                     COUNT(*) as total_collectes')
+            ->groupBy('mois')
+            ->orderBy('mois')
+            ->get();
+
+        $moisKeys = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        $evolutionData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $found = $evolution->firstWhere('mois', $i);
+            $evolutionData[$i] = [
+                'recyclable' => $found->recyclable ?? 0,
+                'organique'  => $found->organique ?? 0,
+                'residuel'   => $found->residuel ?? 0,
+                'total'      => $found->total_collectes ?? 0,
+            ];
+        }
+
+        // --- 4. Répartition des types (pour la période) ---
+        $totauxTypes = $queryCollectes->selectRaw('SUM(poids_recyclable) as recyclable,
+                                               SUM(poids_organique) as organique,
+                                               SUM(poids_residuel) as residuel')
+            ->first();
+
+        // --- 5. Liste des collecteurs pour le filtre ---
+        $allCollecteurs = Collecteur::with('user')->get();
+
+        // --- 6. Primes associées (pour afficher un aperçu) ---
+        // On récupère les primes pour les collecteurs de la période
+        $primesQuery = PrimeCollecteur::where('annee', $annee);
+        if ($mois) {
+            $primesQuery->where('mois', $mois);
+        }
+        if ($collecteurId) {
+            $primesQuery->where('collecteur_id', $collecteurId);
+        }
+        $primes = $primesQuery->get();
+
+        return view('admin.statistiques-collecteurs', compact(
+            'totalCollectes',
+            'totalPoids',
+            'totalPoints',
+            'collecteursActifs',
+            'collecteurs',
+            'top5',
+            'evolutionData',
+            'moisKeys',
+            'totauxTypes',
+            'allCollecteurs',
+            'annee',
+            'mois',
+            'collecteurId',
+            'primes'
+        ));
+    }
+
+    public function commandesCollecteur($id)
+    {
+        $this->checkAdmin();
+        $collecteur = \App\Models\Collecteur::with('user')->findOrFail($id);
+        $commandes = \App\Models\Commande::where('collecteur_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        return view('admin.collecteurs-commandes', compact('collecteur', 'commandes'));
     }
 }

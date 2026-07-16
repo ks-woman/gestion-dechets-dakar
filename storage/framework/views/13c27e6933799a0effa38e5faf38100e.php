@@ -69,7 +69,7 @@
             </a>
         </div>
 
-        <!-- 📦 Commandes à livrer -->
+        <!--  Commandes à livrer -->
         <div class="bg-white rounded-xl shadow-soft p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -131,7 +131,7 @@
             <?php endif; ?>
         </div>
 
-        <!-- 📦 Kits à livrer -->
+        <!--  Kits à livrer -->
         <div class="bg-white rounded-xl shadow-soft p-6">
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
                 <i class="fas fa-box text-emerald-500"></i> Kits à livrer
