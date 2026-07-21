@@ -180,4 +180,9 @@ class User extends Authenticatable
                 return false;
         }
     }
+
+    public function echangeRecompenses()
+    {
+        return $this->hasMany(EchangeRecompense::class);
+    }
 }

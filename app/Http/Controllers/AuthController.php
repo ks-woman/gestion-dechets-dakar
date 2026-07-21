@@ -380,4 +380,29 @@ class AuthController extends Controller
 
         return redirect()->route('menage.preferences')->with('success', 'Préférences enregistrées !');
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'nom' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'telephone' => 'required|string|max:20',
+            'adresse' => 'nullable|string|max:255',
+        ]);
+
+        $user->update([
+            'nom' => $request->nom,
+            'email' => $request->email,
+            'telephone' => $request->telephone,
+            'adresse' => $request->adresse,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil mis à jour avec succès',
+            'user' => $user
+        ]);
+    }
 }

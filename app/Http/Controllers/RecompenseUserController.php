@@ -28,15 +28,12 @@ class RecompenseUserController extends Controller
             ->orderBy('points_requis', 'asc')
             ->paginate(12);
 
-        $mesEchanges = EchangeRecompense::where('user_id', $user->id)
-            ->with('recompense')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        // ✅ Utiliser la relation définie dans User
+        $totalEchanges = $user->echangeRecompenses()->count();
+        $totalPointsDepenses = $user->echangeRecompenses()->sum('points_utilises');
 
-        return view('recompenses.catalogue', compact('recompenses', 'mesEchanges'));
+        return view('recompenses.catalogue', compact('recompenses', 'totalEchanges', 'totalPointsDepenses'));
     }
-
     // Détail d'une récompense
     public function show($id)
     {

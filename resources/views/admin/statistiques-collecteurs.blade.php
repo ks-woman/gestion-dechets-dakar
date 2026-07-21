@@ -65,7 +65,7 @@
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="card">
                 <div class="flex justify-between items-center">
                     <div>
@@ -105,48 +105,24 @@
             </div>
         </div>
 
-        <!-- Graphiques -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Évolution mensuelle -->
-            <div class="bg-white rounded-xl shadow-soft p-6">
-                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                    <i class="fas fa-chart-area text-emerald-500"></i> Évolution des collectes
-                    @if ($collecteurId)
-                        <span class="text-sm font-normal text-gray-500">
-                            ({{ $allCollecteurs->firstWhere('id', $collecteurId)?->user?->prenom }})
-                        </span>
-                    @endif
-                </h3>
-                <canvas id="evolutionChart" height="200"></canvas>
-            </div>
-
-            <!-- Répartition par type -->
-            <div class="bg-white rounded-xl shadow-soft p-6">
-                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                    <i class="fas fa-chart-pie text-emerald-500"></i> Répartition des déchets
-                </h3>
-                <canvas id="repartitionChart" height="200"></canvas>
-            </div>
-        </div>
-
         <!-- Top 5 collecteurs -->
         <div class="bg-white rounded-xl shadow-soft p-6">
             <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <i class="fas fa-trophy text-yellow-500"></i> Top 5 des collecteurs (poids total)
             </h3>
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="w-full min-w-[700px]">
                     <thead>
                         <tr class="border-b">
                             <th class="text-left py-2">#</th>
                             <th class="text-left py-2">Collecteur</th>
-                            <th class="text-left py-2">Matricule</th>
-                            <th class="text-right py-2">Collectes</th>
-                            <th class="text-right py-2">Recyclable</th>
-                            <th class="text-right py-2">Organique</th>
-                            <th class="text-right py-2">Résiduel</th>
+                            <th class="text-left py-2 hidden sm:table-cell">Matricule</th>
+                            <th class="text-right py-2 hidden md:table-cell">Collectes</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Recyclable</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Organique</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Résiduel</th>
                             <th class="text-right py-2">Total (kg)</th>
-                            <th class="text-right py-2">Points</th>
+                            <th class="text-right py-2 hidden sm:table-cell">Points</th>
                             <th class="text-center py-2">Actions</th>
                         </tr>
                     </thead>
@@ -163,17 +139,21 @@
                                     @endif
                                 </td>
                                 <td class="py-2">{{ $c->user->prenom ?? '' }} {{ $c->user->nom ?? '' }}</td>
-                                <td class="py-2">{{ $c->matricule }}</td>
-                                <td class="text-right py-2">{{ $c->collectes_count ?? 0 }}</td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_poids_recyclable ?? 0, 1) }}
+                                <td class="py-2 hidden sm:table-cell">{{ $c->matricule }}</td>
+                                <td class="text-right py-2 hidden md:table-cell">{{ $c->collectes_count ?? 0 }}</td>
+                                <td class="text-right py-2 hidden lg:table-cell">
+                                    {{ number_format($c->collectes_sum_poids_recyclable ?? 0, 1) }}
                                 </td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_poids_organique ?? 0, 1) }}
+                                <td class="text-right py-2 hidden lg:table-cell">
+                                    {{ number_format($c->collectes_sum_poids_organique ?? 0, 1) }}
                                 </td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_poids_residuel ?? 0, 1) }}
+                                <td class="text-right py-2 hidden lg:table-cell">
+                                    {{ number_format($c->collectes_sum_poids_residuel ?? 0, 1) }}
                                 </td>
                                 <td class="text-right py-2 font-bold text-emerald-600">
                                     {{ number_format($c->poids_total, 1) }}</td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_points_obtenus ?? 0) }}</td>
+                                <td class="text-right py-2 hidden sm:table-cell">
+                                    {{ number_format($c->collectes_sum_points_obtenus ?? 0) }}</td>
                                 <td class="text-center py-2">
                                     <a href="{{ route('admin.statistiques.collecteurs', ['collecteur_id' => $c->id, 'annee' => $annee, 'mois' => $mois]) }}"
                                         class="text-blue-500 hover:text-blue-700 text-sm">
@@ -200,17 +180,17 @@
                 </h3>
             </div>
             <div class="overflow-x-auto p-4">
-                <table class="w-full">
+                <table class="w-full min-w-[700px]">
                     <thead>
                         <tr class="border-b text-left text-sm text-gray-500">
                             <th class="py-2">Collecteur</th>
-                            <th class="py-2">Matricule</th>
-                            <th class="text-right py-2">Collectes</th>
-                            <th class="text-right py-2">Recyclable</th>
-                            <th class="text-right py-2">Organique</th>
-                            <th class="text-right py-2">Résiduel</th>
+                            <th class="py-2 hidden sm:table-cell">Matricule</th>
+                            <th class="text-right py-2 hidden md:table-cell">Collectes</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Recyclable</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Organique</th>
+                            <th class="text-right py-2 hidden lg:table-cell">Résiduel</th>
                             <th class="text-right py-2">Total (kg)</th>
-                            <th class="text-right py-2">Points</th>
+                            <th class="text-right py-2 hidden sm:table-cell">Points</th>
                             <th class="text-center py-2">Primes</th>
                         </tr>
                     </thead>
@@ -218,17 +198,20 @@
                         @forelse($collecteurs as $c)
                             <tr class="border-b hover:bg-gray-50">
                                 <td class="py-2">{{ $c->user->prenom ?? '' }} {{ $c->user->nom ?? '' }}</td>
-                                <td class="py-2">{{ $c->matricule }}</td>
-                                <td class="text-right py-2">{{ $c->collectes_count ?? 0 }}</td>
-                                <td class="text-right py-2">
+                                <td class="py-2 hidden sm:table-cell">{{ $c->matricule }}</td>
+                                <td class="text-right py-2 hidden md:table-cell">{{ $c->collectes_count ?? 0 }}</td>
+                                <td class="text-right py-2 hidden lg:table-cell">
                                     {{ number_format($c->collectes_sum_poids_recyclable ?? 0, 1) }}</td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_poids_organique ?? 0, 1) }}
+                                <td class="text-right py-2 hidden lg:table-cell">
+                                    {{ number_format($c->collectes_sum_poids_organique ?? 0, 1) }}
                                 </td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_poids_residuel ?? 0, 1) }}
+                                <td class="text-right py-2 hidden lg:table-cell">
+                                    {{ number_format($c->collectes_sum_poids_residuel ?? 0, 1) }}
                                 </td>
                                 <td class="text-right py-2 font-bold text-emerald-600">
                                     {{ number_format($c->poids_total, 1) }}</td>
-                                <td class="text-right py-2">{{ number_format($c->collectes_sum_points_obtenus ?? 0) }}
+                                <td class="text-right py-2 hidden sm:table-cell">
+                                    {{ number_format($c->collectes_sum_points_obtenus ?? 0) }}
                                 </td>
                                 <td class="text-center py-2">
                                     <a href="{{ route('admin.primes.collecteur', $c->id) }}"
@@ -248,88 +231,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Graphique d'évolution
-            const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
-            const moisKeys = @json($moisKeys);
-            const evolutionData = @json($evolutionData);
-            const labels = moisKeys;
-            const recyclableData = Object.values(evolutionData).map(d => d.recyclable);
-            const organiqueData = Object.values(evolutionData).map(d => d.organique);
-            const residuelData = Object.values(evolutionData).map(d => d.residuel);
-
-            new Chart(evolutionCtx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                            label: 'Recyclable (kg)',
-                            data: recyclableData,
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: '#10b981',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Organique (kg)',
-                            data: organiqueData,
-                            backgroundColor: 'rgba(251, 191, 36, 0.7)',
-                            borderColor: '#f59e0b',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Résiduel (kg)',
-                            data: residuelData,
-                            backgroundColor: 'rgba(107, 114, 128, 0.7)',
-                            borderColor: '#6b7280',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: true
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-
-            // Graphique de répartition
-            const repartitionCtx = document.getElementById('repartitionChart').getContext('2d');
-            const totaux = @json($totauxTypes);
-            new Chart(repartitionCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Recyclable', 'Organique', 'Résiduel'],
-                    datasets: [{
-                        data: [totaux.recyclable || 0, totaux.organique || 0, totaux.residuel || 0],
-                        backgroundColor: ['#10b981', '#f59e0b', '#6b7280'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        });
-    </script>
-@endpush

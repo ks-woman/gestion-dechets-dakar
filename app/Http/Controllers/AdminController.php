@@ -496,7 +496,7 @@ class AdminController extends BaseController
 
         // Période par défaut : année en cours
         $annee = $request->input('annee', now()->year);
-        $mois = $request->input('mois', null); // null = toute l'année
+        $mois = $request->input('mois', null);
         $collecteurId = $request->input('collecteur_id', null);
 
         // Requête de base sur les collectes réalisées
@@ -517,11 +517,9 @@ class AdminController extends BaseController
             + $queryCollectes->sum('poids_organique')
             + $queryCollectes->sum('poids_residuel');
         $totalPoints = $queryCollectes->sum('points_obtenus');
-
-        // Nombre de collecteurs actifs (ceux qui ont fait au moins une collecte sur la période)
         $collecteursActifs = $queryCollectes->distinct('collecteur_id')->count('collecteur_id');
 
-        // --- 2. Données par collecteur (pour le tableau) ---
+        // --- 2. Données par collecteur ---
         $collecteurs = Collecteur::with('user')
             ->withCount(['collectes' => function ($q) use ($annee, $mois) {
                 $q->where('statut', 'realisee')
@@ -550,20 +548,16 @@ class AdminController extends BaseController
             }], 'points_obtenus')
             ->get();
 
-        // Calcul du total par collecteur (poids total = recyclable + organique + résiduel)
         $collecteurs->each(function ($c) {
             $c->poids_total = ($c->collectes_sum_poids_recyclable ?? 0)
                 + ($c->collectes_sum_poids_organique ?? 0)
                 + ($c->collectes_sum_poids_residuel ?? 0);
         });
 
-        // Trier par poids total décroissant
         $collecteurs = $collecteurs->sortByDesc('poids_total')->values();
-
-        // Top 5
         $top5 = $collecteurs->take(5);
 
-        // --- 3. Graphique : Évolution mensuelle (pour tout ou pour un collecteur spécifique) ---
+        // --- 3. Graphique : Évolution mensuelle ---
         $queryEvolution = Collecte::where('statut', 'realisee')
             ->whereYear('date_collecte', $annee);
         if ($collecteurId) {
@@ -581,6 +575,8 @@ class AdminController extends BaseController
             ->get();
 
         $moisKeys = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+        //  Construire les données réelles (même si vides)
         $evolutionData = [];
         for ($i = 1; $i <= 12; $i++) {
             $found = $evolution->firstWhere('mois', $i);
@@ -592,7 +588,13 @@ class AdminController extends BaseController
             ];
         }
 
-        // --- 4. Répartition des types (pour la période) ---
+        //  Calculer le total par mois pour le graphique
+        $moisEvolution = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $moisEvolution[$i] = $evolutionData[$i]['total'];
+        }
+
+        // --- 4. Répartition des types ---
         $totauxTypes = $queryCollectes->selectRaw('SUM(poids_recyclable) as recyclable,
                                                SUM(poids_organique) as organique,
                                                SUM(poids_residuel) as residuel')
@@ -601,8 +603,7 @@ class AdminController extends BaseController
         // --- 5. Liste des collecteurs pour le filtre ---
         $allCollecteurs = Collecteur::with('user')->get();
 
-        // --- 6. Primes associées (pour afficher un aperçu) ---
-        // On récupère les primes pour les collecteurs de la période
+        // --- 6. Primes associées ---
         $primesQuery = PrimeCollecteur::where('annee', $annee);
         if ($mois) {
             $primesQuery->where('mois', $mois);
@@ -611,6 +612,9 @@ class AdminController extends BaseController
             $primesQuery->where('collecteur_id', $collecteurId);
         }
         $primes = $primesQuery->get();
+
+        //  Indicateur pour savoir si des données existent
+        $hasData = $totalCollectes > 0;
 
         return view('admin.statistiques-collecteurs', compact(
             'totalCollectes',
@@ -626,17 +630,33 @@ class AdminController extends BaseController
             'annee',
             'mois',
             'collecteurId',
-            'primes'
+            'primes',
+            'hasData'
         ));
     }
 
-    public function commandesCollecteur($id)
+    /**
+     * Afficher les primes d'un collecteur spécifique
+     */
+    public function primesCollecteur($id)
     {
         $this->checkAdmin();
+
         $collecteur = \App\Models\Collecteur::with('user')->findOrFail($id);
-        $commandes = \App\Models\Commande::where('collecteur_id', $id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-        return view('admin.collecteurs-commandes', compact('collecteur', 'commandes'));
+        $primes = \App\Models\PrimeCollecteur::where('collecteur_id', $id)
+            ->orderBy('annee', 'desc')
+            ->orderBy('mois', 'desc')
+            ->paginate(15);
+
+        // Calcul des totaux
+        $totalPrimes = $primes->where('statut', 'valide')->sum('montant_total');
+        $totalPaye = $primes->where('statut', 'paye')->sum('montant_total');
+
+        return view('admin.primes-collecteur', compact(
+            'collecteur',
+            'primes',
+            'totalPrimes',
+            'totalPaye'
+        ));
     }
 }
